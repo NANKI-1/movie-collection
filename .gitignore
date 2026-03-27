@@ -1,29 +1,51 @@
-### IntelliJ IDEA ###
+# ===================================
+# 🔥 自动生成的编译目录（必须忽略）
+# ===================================
+target/
 out/
-!**/src/main/**/out/
-!**/src/test/**/out/
+build/
+*.class
+*.jar
+*.war
+*.ear
 
-### Eclipse ###
-.apt_generated
+# ===================================
+# 🧩 IntelliJ IDEA 专用（必须忽略）
+# ===================================
+.idea/
+*.iml
+*.iws
+*.ipr
+.smarttomcat/
+
+# ===================================
+# 🌐 Tomcat / 服务器文件（必须忽略）
+# ===================================
+apache-tomcat-*/
+tomcat/
+bin/
+conf/
+lib/
+logs/
+temp/
+work/
+webapps/
+
+# ===================================
+# 🪟 Eclipse / 其他编辑器
+# ===================================
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
-### VS Code ###
 .vscode/
+.apt_generated
 
-### Mac OS ###
+# ===================================
+# 📦 系统垃圾文件
+# ===================================
 .DS_Store
+Thumbs.db
+*.log
