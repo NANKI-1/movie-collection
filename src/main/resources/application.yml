@@ -1,0 +1,33 @@
+server:
+  port: 8080
+  address: 0.0.0.0
+  servlet:
+    context-path: /              # 根路径，不要加 /api
+
+spring:
+  mvc:
+    static-path-pattern: /**     # 静态资源匹配模式
+  web:
+    resources:
+      static-locations:          # 静态资源位置
+        - classpath:/static/
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/movie_system?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+    username: root
+    password: Ma84487814.
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.movie.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+jwt:
+  secret: movie_system_secret_key_2026
+  expiration: 86400000
+
+logging:
+  level:
+    com.movie: DEBUG

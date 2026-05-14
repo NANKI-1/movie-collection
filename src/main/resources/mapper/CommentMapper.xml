@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movie.mapper.CommentMapper">
+
+    <resultMap id="CommentMap" type="com.movie.entity.Comment">
+        <id column="comment_id" property="commentId"/>
+        <result column="movie_id" property="movieId"/>
+        <result column="user_id" property="userId"/>
+        <result column="rating" property="rating"/>
+        <result column="content" property="content"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="reply_to" property="replyTo"/>
+        <result column="is_edited" property="isEdited"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="username" property="username"/>
+        <result column="movie_name" property="movieName"/>
+    </resultMap>
+
+    <select id="findCommentsByMovieId" resultMap="CommentMap">
+        SELECT c.*, u.username, m.movie_name
+        FROM movie_comment c
+        JOIN user u ON c.user_id = u.user_id
+        JOIN movie_public m ON c.movie_id = m.movie_id
+        WHERE c.movie_id = #{movieId}
+        ORDER BY c.create_time DESC
+    </select>
+
+    <select id="findCommentById" resultMap="CommentMap">
+        SELECT * FROM movie_comment WHERE comment_id = #{commentId}
+    </select>
+
+    <insert id="insertComment" useGeneratedKeys="true" keyProperty="commentId">
+        INSERT INTO movie_comment (movie_id, user_id, rating, content)
+        VALUES (#{movieId}, #{userId}, #{rating}, #{content})
+    </insert>
+
+    <update id="updateComment">
+        UPDATE movie_comment
+        SET rating = #{rating},
+        content = #{content},
+        is_edited = TRUE,
+        update_time = NOW()
+        WHERE comment_id = #{commentId}
+    </update>
+
+    <delete id="deleteComment">
+        DELETE FROM movie_comment WHERE comment_id = #{commentId}
+    </delete>
+
+    <select id="findCommentsByUserId" resultMap="CommentMap">
+        SELECT c.*, u.username, m.movie_name
+        FROM movie_comment c
+        JOIN user u ON c.user_id = u.user_id
+        JOIN movie_public m ON c.movie_id = m.movie_id
+        WHERE c.user_id = #{userId}
+        ORDER BY c.create_time DESC
+    </select>
+
+    <select id="getAverageRating" resultType="java.lang.Double">
+        SELECT AVG(rating) FROM movie_comment WHERE movie_id = #{movieId}
+    </select>
+
+    <select id="getRatingCount" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM movie_comment WHERE movie_id = #{movieId}
+    </select>
+
+    <select id="findCommentsByTmdbId" resultMap="CommentMap">
+        SELECT c.*, u.username, m.movie_name
+        FROM movie_comment c
+                 JOIN user u ON c.user_id = u.user_id
+                 JOIN movie_public m ON c.movie_id = m.movie_id
+        WHERE m.tmdb_id = #{tmdbId}
+        ORDER BY c.create_time DESC
+    </select>
+
+    <select id="getAverageRatingByTmdbId" resultType="java.lang.Double">
+        SELECT AVG(c.rating)
+        FROM movie_comment c
+                 JOIN movie_public m ON c.movie_id = m.movie_id
+        WHERE m.tmdb_id = #{tmdbId}
+    </select>
+
+    <select id="getRatingCountByTmdbId" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM movie_comment c
+                 JOIN movie_public m ON c.movie_id = m.movie_id
+        WHERE m.tmdb_id = #{tmdbId}
+    </select>
+</mapper>

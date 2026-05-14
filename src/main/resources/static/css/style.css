@@ -1,0 +1,1480 @@
+/* ==================== 全局样式 ==================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #e0e7ff;
+  --secondary: #8b5cf6;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+  --dark: #1f2937;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --white: #ffffff;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #eef2f6 100%);
+  min-height: 100vh;
+  color: var(--dark);
+}
+
+/* ==================== 导航栏 ==================== */
+.navbar {
+  background: var(--white);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 64px;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  cursor: pointer;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--gray-600);
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--primary);
+}
+
+/* 导航菜单（发现电影/我的收藏等） */
+.nav-menu {
+  display: flex;
+  gap: 8px;
+  margin-left: 40px;
+}
+
+.nav-menu a {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--gray-600);
+  transition: all 0.2s;
+}
+
+.nav-menu a:hover,
+.nav-menu a.active {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.username {
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+.logout-btn {
+  background: none;
+  border: 1px solid var(--gray-300);
+  padding: 6px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.logout-btn:hover {
+  background: var(--danger);
+  color: white;
+  border-color: var(--danger);
+}
+
+/* ==================== 容器 ==================== */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* ==================== 卡片 ==================== */
+.card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* ==================== 电影网格 & 卡片 ==================== */
+.movies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.movie-card {
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.movie-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.movie-poster {
+  width: 100%;
+  height: 360px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+
+.movie-info {
+  padding: 16px;
+}
+
+.movie-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.movie-director,
+.movie-year {
+  font-size: 0.8rem;
+  color: var(--gray-500);
+}
+
+/* ==================== 表单样式 ==================== */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--gray-700);
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  margin-top: 4px;
+}
+
+/* ==================== 按钮样式 ==================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-300);
+}
+
+.btn-secondary:hover {
+  background: var(--gray-200);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+.btn-success {
+  background: var(--success);
+  color: white;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* ==================== 筛选区域 ==================== */
+.filter-section {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.search-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.search-bar input {
+  flex: 1;
+  min-width: 0;  /* 防止 flex 溢出 */
+  padding: 10px 14px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+}
+
+.search-bar input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.search-bar .btn {
+  flex-shrink: 0;  /* 按钮宽度不变 */
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+}
+
+.advanced-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.filter-item {
+  flex: 1;
+  min-width: 150px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+/* ==================== 分页 ==================== */
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 32px;
+}
+
+.page-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--gray-300);
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.page-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* ==================== 星星评分组件 ==================== */
+.stars-container {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.star {
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--gray-400);
+}
+
+.star.active {
+  color: #fbbf24;
+}
+
+.star-large {
+  font-size: 28px;
+}
+
+.star-small {
+  font-size: 14px;
+}
+
+/* ==================== 模态框 ==================== */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.show {
+  display: flex;
+}
+
+.modal-content {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  max-width: 600px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--gray-400);
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: var(--danger);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--gray-200);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* ==================== 标签页 ==================== */
+.tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--gray-100);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+/* ==================== 评价列表 ==================== */
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comment-item {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s;
+}
+
+.comment-item:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.comment-user {
+  font-weight: 600;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.comment-time {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+}
+
+.comment-rating {
+  margin-bottom: 12px;
+}
+
+.comment-content {
+  line-height: 1.6;
+  margin-bottom: 12px;
+  color: var(--gray-600);
+}
+
+.comment-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--gray-100);
+}
+
+/* ==================== 观影状态标签 ==================== */
+.watch-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.watch-status.想看 {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.watch-status.已看 {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.watch-status.不感兴趣 {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ==================== Toast 提示 ==================== */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--dark);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 40px;
+  font-size: 0.875rem;
+  z-index: 1100;
+  transition: transform 0.3s, opacity 0.3s;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.toast.success {
+  background: var(--success);
+}
+
+.toast.error {
+  background: var(--danger);
+}
+
+.toast.warning {
+  background: var(--warning);
+}
+
+/* ==================== 加载状态 ==================== */
+.loading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==================== 电影详情页 ==================== */
+.movie-detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  margin-bottom: 32px;
+}
+
+.movie-detail-poster {
+  width: 240px;
+  height: 360px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.movie-detail-info {
+  flex: 1;
+}
+
+.movie-detail-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.movie-detail-meta {
+  color: var(--gray-500);
+  margin-bottom: 16px;
+}
+
+.movie-detail-meta p {
+  margin-bottom: 8px;
+}
+
+.average-rating {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--gray-100);
+  border-radius: var(--radius-md);
+}
+
+.average-rating-label {
+  font-weight: 500;
+  margin-right: 12px;
+}
+
+.my-rating {
+  margin-bottom: 20px;
+}
+
+/* ==================== 发现电影页面专用样式 ==================== */
+.hero-section {
+  text-align: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, var(--primary-light), #e8ecff);
+  border-radius: var(--radius-xl);
+  margin-bottom: 32px;
+}
+
+.hero-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 12px;
+}
+
+.hero-subtitle {
+  color: var(--gray-600);
+  font-size: 1rem;
+}
+
+.search-section {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.search-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.search-input-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input-group label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  margin-bottom: 4px;
+}
+
+.search-input-group input,
+.search-input-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+}
+
+.search-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.loading-more {
+  text-align: center;
+  padding: 40px;
+}
+
+.login-prompt-modal .modal-content {
+  max-width: 380px;
+  text-align: center;
+}
+
+.login-prompt-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+/* ==================== 登录页面样式 ==================== */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #eef2f6 100%);
+}
+
+.login-card {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.brand-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  margin: 0 auto 16px;
+  border-radius: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  box-shadow: var(--shadow-md);
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 8px;
+}
+
+.login-subtitle {
+  color: var(--gray-500);
+  font-size: 14px;
+}
+
+.error-message {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  font-size: 14px;
+  display: none;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 24px;
+  color: var(--gray-500);
+  font-size: 14px;
+}
+
+.login-footer a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.back-link {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.back-link a {
+  color: var(--gray-400);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+/* ==================== 注册页面样式 ==================== */
+.register-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.register-card {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  width: 100%;
+  max-width: 480px;
+  padding: 40px;
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.register-title {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 8px;
+}
+
+.register-subtitle {
+  color: var(--gray-500);
+  font-size: 14px;
+}
+
+.register-footer {
+  text-align: center;
+  margin-top: 24px;
+  color: var(--gray-500);
+  font-size: 14px;
+}
+
+.register-footer a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.password-strength {
+  margin-top: 8px;
+  height: 4px;
+  background: var(--gray-200);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.password-strength-bar {
+  height: 100%;
+  width: 0%;
+  transition: width 0.3s;
+}
+
+.password-strength-text {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* ==================== 个人资料页面样式 ==================== */
+.profile-card {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  max-width: 600px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.profile-header {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  padding: 40px;
+  text-align: center;
+  color: white;
+}
+
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  margin: 0 auto 16px;
+}
+
+.profile-username {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.profile-body {
+  padding: 32px;
+}
+
+.info-row {
+  display: flex;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.info-label {
+  width: 100px;
+  font-weight: 500;
+  color: var(--gray-600);
+}
+
+.info-value {
+  flex: 1;
+  color: var(--gray-800);
+}
+
+.edit-btn {
+  margin-top: 24px;
+  width: 100%;
+}
+
+.stats-grid {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.stat-card {
+  flex: 1;
+  background: var(--gray-100);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+
+/* ==================== 空状态 ==================== */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state-text {
+  color: var(--gray-500);
+  margin-bottom: 20px;
+}
+
+/* ==================== 工具类 ==================== */
+.text-center {
+  text-align: center;
+}
+
+.text-muted {
+  color: var(--gray-400);
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
+
+.mt-3 {
+  margin-top: 16px;
+}
+
+.mt-4 {
+  margin-top: 24px;
+}
+
+.mb-2 {
+  margin-bottom: 8px;
+}
+
+.mb-3 {
+  margin-bottom: 16px;
+}
+
+.mb-4 {
+  margin-bottom: 24px;
+}
+
+/* ==================== 响应式设计 ==================== */
+/* ==================== 响应式设计 - 平板 (768px以下) ==================== */
+@media (max-width: 768px) {
+  /* 导航栏响应式 */
+  .navbar-container {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+  }
+
+  .nav-menu {
+    margin-left: 0;
+    order: 2;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .nav-menu a {
+    padding: 6px 12px;
+    font-size: 0.875rem;
+  }
+
+  .nav-links {
+    order: 1;
+  }
+
+  /* 容器内边距调整 */
+  .container {
+    padding: 20px 16px;
+  }
+
+  /* 电影网格 - 平板 */
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+  }
+
+  .movie-poster {
+    height: 260px;
+  }
+
+  /* 电影卡片信息 */
+  .movie-title {
+    font-size: 0.95rem;
+    white-space: normal;
+    line-height: 1.3;
+    min-height: 2.6em;
+  }
+
+  .movie-director,
+  .movie-year {
+    font-size: 0.7rem;
+  }
+
+  /* 搜索区域 */
+  .hero-section {
+    padding: 30px 16px;
+  }
+
+  .hero-title {
+    font-size: 1.75rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.875rem;
+  }
+
+  .search-section {
+    padding: 16px;
+  }
+
+  .search-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .search-input-group {
+    min-width: auto;
+  }
+
+  .search-actions {
+    flex-direction: column;
+  }
+
+  .search-actions .btn {
+    width: 100%;
+  }
+
+  /* 筛选区域 */
+  .filter-section {
+    padding: 16px;
+  }
+
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .search-bar .btn {
+    width: 100%;
+  }
+
+  .advanced-filters {
+    flex-direction: column;
+  }
+
+  .filter-actions {
+    flex-direction: column;
+  }
+
+  .filter-actions .btn {
+    width: 100%;
+  }
+
+  /* 电影详情页 */
+  .movie-detail-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .movie-detail-poster {
+    width: 180px;
+    height: 270px;
+  }
+
+  .movie-detail-title {
+    font-size: 1.5rem;
+  }
+
+  /* 模态框 */
+  .modal-content {
+    width: 95%;
+    margin: 16px;
+    max-height: 90vh;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  /* 按钮组 */
+  .modal-footer {
+    flex-direction: column;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+
+  /* 分页 */
+  .pagination {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .page-btn {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  /* 评论列表 */
+  .comment-item {
+    padding: 16px;
+  }
+
+  .comment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .comment-actions {
+    justify-content: flex-start;
+  }
+
+  /* 个人资料页 */
+  .profile-card {
+    margin: 0 16px;
+  }
+
+  .profile-header {
+    padding: 30px 20px;
+  }
+
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+    font-size: 36px;
+  }
+
+  .profile-username {
+    font-size: 1.25rem;
+  }
+
+  .profile-body {
+    padding: 20px;
+  }
+
+  .info-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .info-label {
+    width: auto;
+  }
+
+  .stats-grid {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* 登录/注册卡片 */
+  .login-card,
+  .register-card {
+    padding: 24px 20px;
+    margin: 0 16px;
+  }
+
+  .login-title,
+  .register-title {
+    font-size: 1.5rem;
+  }
+}
+
+/* ==================== 响应式设计 - 手机 (480px以下) ==================== */
+@media (max-width: 480px) {
+  /* 导航栏 */
+  .nav-menu {
+    gap: 4px;
+  }
+
+  .nav-menu a {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  .username {
+    font-size: 0.875rem;
+  }
+
+  .logout-btn {
+    padding: 4px 12px;
+    font-size: 0.75rem;
+  }
+
+  /* 电影网格 - 手机 */
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+
+  .movie-poster {
+    height: 220px;
+  }
+
+  .movie-info {
+    padding: 12px;
+  }
+
+  .movie-title {
+    font-size: 0.85rem;
+  }
+
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
+
+  /* 评分星星 */
+  .star {
+    font-size: 16px;
+  }
+
+  .star-large {
+    font-size: 22px;
+  }
+
+  /* Toast 提示 */
+  .toast {
+    left: 16px;
+    right: 16px;
+    transform: translateX(0);
+    width: auto;
+    font-size: 0.75rem;
+    padding: 10px 16px;
+  }
+
+  .toast.show {
+    transform: translateX(0);
+  }
+
+  /* 空状态 */
+  .empty-state {
+    padding: 40px 16px;
+  }
+
+  .empty-state-icon {
+    font-size: 36px;
+  }
+
+  /* 电影详情页评分显示 */
+  .average-rating {
+    font-size: 0.875rem;
+  }
+}
+
+/* ==================== 响应式设计 - 超大屏幕 (1400px以上) ==================== */
+@media (min-width: 1400px) {
+  .container {
+    max-width: 1400px;
+  }
+
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 28px;
+  }
+
+  .movie-poster {
+    height: 400px;
+  }
+}
+
+/* 移动端触摸优化 */
+@media (max-width: 768px) {
+  button,
+  .btn,
+  .movie-card,
+  .page-btn,
+  .nav-menu a,
+  .modal-close,
+  .logout-btn {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 增大可点击区域 */
+  .btn-sm {
+    min-height: 36px;
+  }
+
+  /* 滚动优化 */
+  .modal-content {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 电影卡片详细信息 */
+.movie-director,
+.movie-year,
+.movie-genre,
+.movie-region {
+  font-size: 0.75rem;
+  color: var(--gray-600);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.movie-director strong,
+.movie-year strong,
+.movie-genre strong,
+.movie-region strong {
+  color: var(--gray-700);
+  margin-right: 4px;
+}

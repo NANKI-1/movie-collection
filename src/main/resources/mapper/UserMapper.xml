@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movie.mapper.UserMapper">
+
+    <resultMap id="UserMap" type="com.movie.entity.User">
+        <id column="user_id" property="userId"/>
+        <result column="username" property="username"/>
+        <result column="password" property="password"/>
+        <result column="email" property="email"/>
+        <result column="avatar" property="avatar"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="findByUsername" resultMap="UserMap">
+        SELECT * FROM user WHERE username = #{username}
+    </select>
+
+    <select id="findByEmail" resultMap="UserMap">
+        SELECT * FROM user WHERE email = #{email}
+    </select>
+
+    <select id="findByUserId" resultMap="UserMap">
+        SELECT * FROM user WHERE user_id = #{userId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="userId">
+        INSERT INTO user (username, password, email)
+        VALUES (#{username}, #{password}, #{email})
+    </insert>
+
+    <update id="updatePassword">
+        UPDATE user SET password = #{password} WHERE user_id = #{userId}
+    </update>
+
+    <update id="updateUser">
+        UPDATE user
+        SET email = #{email},
+            password = #{password},
+            update_time = NOW()
+        WHERE user_id = #{userId}
+    </update>
+</mapper>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>个人资料 - 银幕记忆</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-container">
+    <div class="logo" onclick="window.location.href='index.html'">🎬 银幕记忆</div>
+    <div class="nav-menu">
+      <a href="top-rated.html">排行榜</a>
+      <a href="index.html">发现电影</a>
+      <a href="my-collections.html">我的收藏</a>
+      <a href="my-comments.html">我的评价</a>
+      <a href="profile.html" class="active">个人资料</a>
+    </div>
+    <div class="nav-links">
+      <div class="user-info">
+        <span class="username" id="username"></span>
+        <button class="logout-btn" onclick="logout()">退出</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="profile-card">
+    <div class="profile-header">
+      <div class="profile-avatar">👤</div>
+      <div class="profile-username" id="profileUsername"></div>
+    </div>
+    <div class="profile-body">
+      <div class="info-row">
+        <div class="info-label">用户名</div>
+        <div class="info-value" id="displayUsername"></div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">邮箱</div>
+        <div class="info-value" id="displayEmail"></div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">注册时间</div>
+        <div class="info-value" id="displayCreateTime"></div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="collectionCount">0</div>
+          <div class="stat-label">电影收藏</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="commentCount">0</div>
+          <div class="stat-label">发表评价</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary edit-btn" id="editProfileBtn">编辑资料</button>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑资料模态框 -->
+<div id="editProfileModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">编辑资料</h3>
+      <button class="modal-close" id="closeEditProfileBtn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">邮箱</label>
+        <input type="email" id="editEmail" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">新密码（留空则不修改）</label>
+        <input type="password" id="newPassword" class="form-input" placeholder="6-32位字符">
+      </div>
+      <div class="form-group">
+        <label class="form-label">确认新密码</label>
+        <input type="password" id="confirmNewPassword" class="form-input">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelEditProfileBtn">取消</button>
+      <button class="btn btn-primary" id="saveProfileBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script>
+  let userInfo = null;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const user = getCurrentUser();
+    if (!user) {
+      sessionStorage.setItem('redirectAfterLogin', window.location.href);
+      window.location.href = 'login.html';
+      return;
+    }
+    userInfo = user;
+    document.getElementById('username').textContent = user.username || '用户';
+    document.getElementById('profileUsername').textContent = user.username;
+    document.getElementById('displayUsername').textContent = user.username;
+    document.getElementById('displayEmail').textContent = user.email || '未设置';
+    document.getElementById('displayCreateTime').textContent = '注册会员';
+
+    await loadStats();
+    bindEvents();
+  });
+
+  async function loadStats() {
+    try {
+      const movies = await movieAPI.getAllMovies();
+      const comments = await commentAPI.getMyComments();
+      document.getElementById('collectionCount').textContent = movies.data?.length || 0;
+      document.getElementById('commentCount').textContent = comments.data?.length || 0;
+    } catch (error) {
+      console.error('加载统计失败:', error);
+    }
+  }
+
+  function bindEvents() {
+    document.getElementById('editProfileBtn').addEventListener('click', () => {
+      document.getElementById('editEmail').value = userInfo.email || '';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmNewPassword').value = '';
+      document.getElementById('editProfileModal').classList.add('show');
+    });
+    document.getElementById('closeEditProfileBtn').addEventListener('click', () => {
+      document.getElementById('editProfileModal').classList.remove('show');
+    });
+    document.getElementById('cancelEditProfileBtn').addEventListener('click', () => {
+      document.getElementById('editProfileModal').classList.remove('show');
+    });
+    document.getElementById('saveProfileBtn').addEventListener('click', saveProfile);
+  }
+
+  async function saveProfile() {
+    const email = document.getElementById('editEmail').value.trim();
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmNewPassword').value;
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showToast('请输入有效的邮箱地址', 'error');
+      return;
+    }
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        showToast('密码长度至少6位', 'error');
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        showToast('两次输入的密码不一致', 'error');
+        return;
+      }
+    }
+
+    try {
+      const updateData = {};
+      if (email) updateData.email = email;
+      if (newPassword) updateData.password = newPassword;
+
+      const result = await userAPI.updateProfile(updateData);
+      if (result.code === 200) {
+        showToast('资料更新成功', 'success');
+        if (email) {
+          const user = getCurrentUser();
+          user.email = email;
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+        document.getElementById('editProfileModal').classList.remove('show');
+        location.reload();
+      } else {
+        showToast(result.message, 'error');
+      }
+    } catch (error) {
+      showToast('更新失败', 'error');
+    }
+  }
+</script>
+</body>
+</html>

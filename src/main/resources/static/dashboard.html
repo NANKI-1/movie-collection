@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>我的电影 - 银幕记忆</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!-- 导航栏 -->
+<nav class="navbar">
+  <div class="navbar-container">
+    <div class="logo" onclick="window.location.href='dashboard.html'">🎬 银幕记忆</div>
+    <div class="nav-links">
+      <a href="dashboard.html" class="active">我的电影</a>
+      <div class="user-info">
+        <span class="username" id="username"></span>
+        <button class="logout-btn" onclick="logout()">退出</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <!-- 添加电影按钮 -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2>我的电影收藏</h2>
+    <button class="btn btn-primary" id="addMovieBtn">+ 添加电影</button>
+  </div>
+
+  <!-- 筛选区域 -->
+  <div class="filter-section">
+    <div class="search-bar">
+      <input type="text" id="searchKeyword" class="search-input" placeholder="搜索电影名称...">
+      <button class="btn btn-primary" id="searchBtn">搜索</button>
+    </div>
+
+    <div id="advancedFilters" style="display: none;">
+      <div class="advanced-filters">
+        <div class="filter-item">
+          <label class="form-label">导演/演员</label>
+          <input type="text" id="filterDirector" class="form-input" placeholder="输入导演或演员姓名">
+        </div>
+        <div class="filter-item">
+          <label class="form-label">评分区间</label>
+          <select id="filterRating" class="form-select">
+            <option value="">全部</option>
+            <option value="4.5">4.5星及以上</option>
+            <option value="4">4星及以上</option>
+            <option value="3.5">3.5星及以上</option>
+            <option value="3">3星及以上</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label class="form-label">地区</label>
+          <select id="filterRegion" class="form-select">
+            <option value="">全部</option>
+            <option value="美国">美国</option>
+            <option value="中国">中国</option>
+            <option value="日本">日本</option>
+            <option value="韩国">韩国</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label class="form-label">类型</label>
+          <select id="filterGenre" class="form-select">
+            <option value="">全部</option>
+            <option value="动作">动作</option>
+            <option value="喜剧">喜剧</option>
+            <option value="爱情">爱情</option>
+            <option value="科幻">科幻</option>
+            <option value="悬疑">悬疑</option>
+            <option value="剧情">剧情</option>
+            <option value="动画">动画</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <button class="btn btn-secondary" id="toggleFiltersBtn">高级筛选</button>
+      <button class="btn btn-secondary" id="resetFiltersBtn">重置</button>
+      <button class="btn btn-primary" id="applyFiltersBtn">查询</button>
+    </div>
+  </div>
+
+  <!-- 电影网格 -->
+  <div id="moviesGrid" class="movies-grid"></div>
+
+  <!-- 分页 -->
+  <div id="pagination" class="pagination"></div>
+</div>
+
+<!-- 添加/编辑电影模态框 -->
+<div id="movieModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modalTitle">添加电影</h3>
+      <button class="modal-close" id="closeModalBtn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="movieForm">
+        <input type="hidden" id="editCollectionId">
+
+        <div class="tabs">
+          <button type="button" class="tab-btn active" data-tab="manual">手动录入</button>
+          <button type="button" class="tab-btn" data-tab="api">API拉取</button>
+        </div>
+
+        <!-- 手动录入 -->
+        <div id="manualTab" class="tab-pane active">
+          <div class="form-group">
+            <label class="form-label">电影名称 *</label>
+            <input type="text" id="movieName" class="form-input" placeholder="请输入电影名称">
+          </div>
+          <div class="form-group">
+            <label class="form-label">导演/演员</label>
+            <input type="text" id="director" class="form-input" placeholder="请输入导演和演员姓名">
+          </div>
+          <div class="form-group">
+            <label class="form-label">上映年份</label>
+            <input type="number" id="year" class="form-input" placeholder="四位数字，如1994">
+          </div>
+          <div class="form-group">
+            <label class="form-label">地区</label>
+            <input type="text" id="region" class="form-input" placeholder="如：美国、中国">
+          </div>
+          <div class="form-group">
+            <label class="form-label">类型</label>
+            <input type="text" id="genre" class="form-input" placeholder="如：动作、喜剧">
+          </div>
+          <div class="form-group">
+            <label class="form-label">海报链接</label>
+            <input type="url" id="posterUrl" class="form-input" placeholder="请输入海报图片URL">
+          </div>
+        </div>
+
+        <!-- API拉取 -->
+        <div id="apiTab" class="tab-pane">
+          <div class="form-group">
+            <label class="form-label">搜索电影</label>
+            <div style="display: flex; gap: 12px;">
+              <input type="text" id="apiSearchKeyword" class="form-input" placeholder="输入电影名称">
+              <button type="button" class="btn btn-primary" id="searchTMDBBtn">搜索</button>
+            </div>
+          </div>
+          <div id="tmdbResults" style="max-height: 300px; overflow-y: auto;"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">个人评分</label>
+          <div id="ratingStars"></div>
+          <input type="hidden" id="personalRating" value="0">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">观影状态</label>
+          <select id="watchStatus" class="form-select">
+            <option value="想看">想看</option>
+            <option value="已看">已看</option>
+            <option value="不感兴趣">不感兴趣</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">私人影评</label>
+          <textarea id="privateReview" class="form-textarea" placeholder="写下你的私人观影感受（仅自己可见）"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelModalBtn">取消</button>
+      <button class="btn btn-primary" id="saveMovieBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div id="deleteModal" class="modal">
+  <div class="modal-content" style="max-width: 400px;">
+    <div class="modal-header">
+      <h3 class="modal-title">确认删除</h3>
+      <button class="modal-close" id="closeDeleteModalBtn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>确定要删除该电影收藏吗？此操作不可恢复。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelDeleteBtn">取消</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script>
+  // 全局变量
+  let currentMovies = [];
+  let currentPage = 1;
+  let pageSize = 12;
+  let deleteTargetId = null;
+  let currentRating = 0;
+  let filtersVisible = false;
+
+  // 页面初始化
+  document.addEventListener('DOMContentLoaded', () => {
+    const user = getCurrentUser();
+    if (!user) {
+      window.location.href = 'index.html';
+      return;
+    }
+    document.getElementById('username').textContent = user.username || '用户';
+    initRatingStars();
+    loadMovies();
+    bindEvents();
+  });
+
+  // 初始化评分星星
+  function initRatingStars() {
+    const container = document.getElementById('ratingStars');
+    if (!container) return;
+    container.innerHTML = '';
+
+    for (let i = 1; i <= 5; i++) {
+      const star = document.createElement('span');
+      star.className = 'star';
+      star.innerHTML = '☆';
+      star.style.fontSize = '24px';
+      star.style.cursor = 'pointer';
+      star.onclick = () => setRating(i);
+      container.appendChild(star);
+    }
+  }
+
+  function setRating(value) {
+    currentRating = value;
+    document.getElementById('personalRating').value = value;
+    const stars = document.querySelectorAll('#ratingStars .star');
+    stars.forEach((star, index) => {
+      star.innerHTML = index < value ? '★' : '☆';
+    });
+  }
+
+  // 加载电影列表
+  async function loadMovies() {
+    try {
+      const result = await movieAPI.getAllMovies();
+      if (result.code === 200) {
+        currentMovies = result.data || [];
+        renderMovies();
+      } else {
+        showToast(result.message || '加载失败', 'error');
+      }
+    } catch (error) {
+      console.error('加载电影失败:', error);
+      showToast('加载电影列表失败', 'error');
+    }
+  }
+
+  // 渲染电影网格
+  function renderMovies() {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageMovies = currentMovies.slice(start, end);
+    const grid = document.getElementById('moviesGrid');
+
+    if (pageMovies.length === 0) {
+      grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <div class="empty-state-icon">🎬</div>
+                        <p class="empty-state-text">暂无收藏，快去添加电影吧</p>
+                        <button class="btn btn-primary" id="emptyAddBtn">+ 添加电影</button>
+                    </div>
+                `;
+      const emptyAddBtn = document.getElementById('emptyAddBtn');
+      if (emptyAddBtn) emptyAddBtn.onclick = () => openAddMovieModal();
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+
+    grid.innerHTML = pageMovies.map(movie => `
+                <div class="card movie-card" data-movieid="${movie.movieId}">
+                    <img src="${movie.posterUrl || 'https://via.placeholder.com/300x400?text=No+Poster'}"
+                         class="movie-poster"
+                         alt="${escapeHtml(movie.movieName)}"
+                         onerror="this.src='https://via.placeholder.com/300x400?text=No+Poster'">
+                    <div class="movie-info">
+                        <h3 class="movie-title">${escapeHtml(movie.movieName)}</h3>
+                        <p class="movie-director">${escapeHtml(movie.director || '未知导演')}</p>
+                        <p class="movie-year">${movie.year || '未知年份'}</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                            <div>${renderStars(movie.personalRating || 0, 'small')}</div>
+                            <span class="watch-status ${movie.watchStatus}">${movie.watchStatus}</span>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <button class="btn btn-secondary btn-sm edit-movie" data-id="${movie.collectionId}">编辑</button>
+                            <button class="btn btn-danger btn-sm delete-movie" data-id="${movie.collectionId}">删除</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+    // 绑定卡片点击事件
+    document.querySelectorAll('.movie-card').forEach(card => {
+      card.onclick = (e) => {
+        if (e.target.classList.contains('edit-movie') ||
+                e.target.classList.contains('delete-movie')) return;
+        const movieId = card.dataset.movieid;
+        window.location.href = `movie-detail.html?id=${movieId}`;
+      };
+    });
+
+    // 绑定编辑按钮
+    document.querySelectorAll('.edit-movie').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        openEditMovieModal(parseInt(btn.dataset.id));
+      };
+    });
+
+    // 绑定删除按钮
+    document.querySelectorAll('.delete-movie').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        openDeleteModal(parseInt(btn.dataset.id));
+      };
+    });
+
+    renderPagination();
+  }
+
+  function renderPagination() {
+    const totalPages = Math.ceil(currentMovies.length / pageSize);
+    if (totalPages <= 1) {
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+    let html = '';
+    for (let i = 1; i <= totalPages; i++) {
+      html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+    }
+    document.getElementById('pagination').innerHTML = html;
+    document.querySelectorAll('.page-btn').forEach(btn => {
+      btn.onclick = () => {
+        currentPage = parseInt(btn.dataset.page);
+        renderMovies();
+      };
+    });
+  }
+
+  // 搜索功能
+  async function searchMovies() {
+    const keyword = document.getElementById('searchKeyword').value;
+    if (!keyword) {
+      await loadMovies();
+      return;
+    }
+
+    try {
+      const result = await movieAPI.searchMovies({ keyword });
+      if (result.code === 200) {
+        currentMovies = result.data || [];
+        currentPage = 1;
+        renderMovies();
+      } else {
+        showToast(result.message, 'error');
+      }
+    } catch (error) {
+      console.error('搜索失败:', error);
+      showToast('搜索失败', 'error');
+    }
+  }
+
+  // 高级筛选
+  async function applyFilters() {
+    const params = {
+      director: document.getElementById('filterDirector').value,
+      minRating: document.getElementById('filterRating').value,
+      region: document.getElementById('filterRegion').value,
+      genre: document.getElementById('filterGenre').value
+    };
+
+    // 过滤空值
+    Object.keys(params).forEach(key => {
+      if (!params[key] || params[key] === '全部') {
+        delete params[key];
+      }
+    });
+
+    try {
+      const result = await movieAPI.searchMovies(params);
+      if (result.code === 200) {
+        currentMovies = result.data || [];
+        currentPage = 1;
+        renderMovies();
+      } else {
+        showToast(result.message, 'error');
+      }
+    } catch (error) {
+      console.error('筛选失败:', error);
+      showToast('筛选失败', 'error');
+    }
+  }
+
+  function resetFilters() {
+    document.getElementById('searchKeyword').value = '';
+    document.getElementById('filterDirector').value = '';
+    document.getElementById('filterRating').value = '';
+    document.getElementById('filterRegion').value = '';
+    document.getElementById('filterGenre').value = '';
+    loadMovies();
+  }
+
+  function toggleAdvancedFilters() {
+    const filters = document.getElementById('advancedFilters');
+    filtersVisible = !filtersVisible;
+    filters.style.display = filtersVisible ? 'block' : 'none';
+    document.getElementById('toggleFiltersBtn').textContent = filtersVisible ? '收起筛选' : '高级筛选';
+  }
+
+  // 模态框操作
+  function openAddMovieModal() {
+    document.getElementById('modalTitle').textContent = '添加电影';
+    document.getElementById('movieForm').reset();
+    document.getElementById('editCollectionId').value = '';
+    currentRating = 0;
+    updateRatingStarsDisplay();
+    document.getElementById('movieModal').classList.add('show');
+  }
+
+  function openEditMovieModal(collectionId) {
+    const movie = currentMovies.find(m => m.collectionId === collectionId);
+    if (!movie) return;
+
+    document.getElementById('modalTitle').textContent = '编辑电影';
+    document.getElementById('editCollectionId').value = movie.collectionId;
+    document.getElementById('movieName').value = movie.movieName || '';
+    document.getElementById('director').value = movie.director || '';
+    document.getElementById('year').value = movie.year || '';
+    document.getElementById('region').value = movie.region || '';
+    document.getElementById('genre').value = movie.genre || '';
+    document.getElementById('posterUrl').value = movie.posterUrl || '';
+    document.getElementById('watchStatus').value = movie.watchStatus || '想看';
+    document.getElementById('privateReview').value = movie.privateReview || '';
+    currentRating = movie.personalRating || 0;
+    updateRatingStarsDisplay();
+    document.getElementById('movieModal').classList.add('show');
+  }
+
+  function updateRatingStarsDisplay() {
+    const stars = document.querySelectorAll('#ratingStars .star');
+    stars.forEach((star, index) => {
+      star.innerHTML = index < currentRating ? '★' : '☆';
+    });
+    document.getElementById('personalRating').value = currentRating;
+  }
+
+  function closeMovieModal() {
+    document.getElementById('movieModal').classList.remove('show');
+  }
+
+  // 保存电影
+  async function saveMovie() {
+    const collectionId = document.getElementById('editCollectionId').value;
+
+    const movieData = {
+      movieName: document.getElementById('movieName').value,
+      director: document.getElementById('director').value,
+      year: document.getElementById('year').value,
+      region: document.getElementById('region').value,
+      genre: document.getElementById('genre').value,
+      posterUrl: document.getElementById('posterUrl').value,
+      personalRating: currentRating,
+      watchStatus: document.getElementById('watchStatus').value,
+      privateReview: document.getElementById('privateReview').value
+    };
+
+    if (!movieData.movieName) {
+      showToast('请填写电影名称', 'error');
+      return;
+    }
+
+    try {
+      let result;
+      if (collectionId) {
+        result = await movieAPI.updateMovie(collectionId, movieData);
+      } else {
+        result = await movieAPI.addMovie(movieData);
+      }
+
+      if (result.code === 200) {
+        showToast(result.message, 'success');
+        closeMovieModal();
+        await loadMovies();
+      } else {
+        showToast(result.message, 'error');
+      }
+    } catch (error) {
+      console.error('保存失败:', error);
+      showToast('保存失败', 'error');
+    }
+  }
+
+  // 删除电影
+  function openDeleteModal(collectionId) {
+    deleteTargetId = collectionId;
+    document.getElementById('deleteModal').classList.add('show');
+  }
+
+  function closeDeleteModal() {
+    deleteTargetId = null;
+    document.getElementById('deleteModal').classList.remove('show');
+  }
+
+  async function confirmDelete() {
+    if (!deleteTargetId) return;
+
+    try {
+      const result = await movieAPI.deleteMovie(deleteTargetId);
+      if (result.code === 200) {
+        showToast('删除成功', 'success');
+        closeDeleteModal();
+        await loadMovies();
+      } else {
+        showToast(result.message, 'error');
+      }
+    } catch (error) {
+      console.error('删除失败:', error);
+      showToast('删除失败', 'error');
+    }
+  }
+
+  // TMDB 搜索模拟
+  async function searchTMDB() {
+    const keyword = document.getElementById('apiSearchKeyword').value;
+    if (!keyword) {
+      showToast('请输入电影名称', 'warning');
+      return;
+    }
+
+    // 注意：TMDB API 需要后端实现代理调用
+    // 这里模拟搜索结果，实际应调用后端 /api/tmdb/search 接口
+    showToast('TMDB功能需要后端实现代理接口', 'info');
+
+    const container = document.getElementById('tmdbResults');
+    container.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: var(--gray-500);">
+                    请在后端实现 TMDB API 代理接口<br>
+                    接口地址: /api/tmdb/search?keyword=${encodeURIComponent(keyword)}
+                </div>
+            `;
+  }
+
+  function selectTMDBMovie(title, year) {
+    document.getElementById('movieName').value = title;
+    document.getElementById('year').value = year;
+    showToast(`已选择：${title}`, 'success');
+  }
+
+  // 标签页切换
+  function switchTab(tab) {
+    const manualTab = document.getElementById('manualTab');
+    const apiTab = document.getElementById('apiTab');
+    const tabBtns = document.querySelectorAll('.tab-btn');
+
+    tabBtns.forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.dataset.tab === tab) btn.classList.add('active');
+    });
+
+    if (tab === 'manual') {
+      manualTab.classList.add('active');
+      apiTab.classList.remove('active');
+    } else {
+      manualTab.classList.remove('active');
+      apiTab.classList.add('active');
+    }
+  }
+
+  // 绑定事件
+  function bindEvents() {
+    document.getElementById('addMovieBtn')?.addEventListener('click', openAddMovieModal);
+    document.getElementById('searchBtn')?.addEventListener('click', searchMovies);
+    document.getElementById('resetFiltersBtn')?.addEventListener('click', resetFilters);
+    document.getElementById('applyFiltersBtn')?.addEventListener('click', applyFilters);
+    document.getElementById('toggleFiltersBtn')?.addEventListener('click', toggleAdvancedFilters);
+    document.getElementById('closeModalBtn')?.addEventListener('click', closeMovieModal);
+    document.getElementById('cancelModalBtn')?.addEventListener('click', closeMovieModal);
+    document.getElementById('saveMovieBtn')?.addEventListener('click', saveMovie);
+    document.getElementById('closeDeleteModalBtn')?.addEventListener('click', closeDeleteModal);
+    document.getElementById('cancelDeleteBtn')?.addEventListener('click', closeDeleteModal);
+    document.getElementById('confirmDeleteBtn')?.addEventListener('click', confirmDelete);
+    document.getElementById('searchTMDBBtn')?.addEventListener('click', searchTMDB);
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+  }
+</script>
+</body>
+</html>
