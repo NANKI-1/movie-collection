@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>电影详情 - 银幕记忆</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!-- 导航栏 -->
+<nav class="navbar">
+  <div class="navbar-container">
+    <div class="logo" onclick="window.location.href='dashboard.html'">🎬 银幕记忆</div>
+    <div class="nav-links">
+      <a href="dashboard.html">我的电影</a>
+      <div class="user-info">
+        <span class="username" id="username"></span>
+        <button class="logout-btn" onclick="logout()">退出</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <!-- 电影详情区域 -->
+  <div id="movieDetailContainer"></div>
+
+  <!-- 综合评分区域 -->
+  <div id="averageRatingContainer" class="average-rating" style="margin-bottom: 24px; display: none;">
+    <span class="average-rating-label">综合评分：</span>
+    <span id="avgRatingStars"></span>
+    <span id="avgRatingValue" style="margin-left: 8px; font-weight: 500;"></span>
+    <span id="ratingCount" style="color: var(--gray-500); margin-left: 8px;"></span>
+  </div>
+
+  <!-- 发布评价按钮 -->
+  <div style="margin-bottom: 24px;">
+    <button class="btn btn-primary" id="openCommentBtn">📝 发布评价</button>
+  </div>
+
+  <!-- 评价列表 -->
+  <h3 style="margin-bottom: 16px;">用户评价</h3>
+  <div id="commentsList" class="comment-list"></div>
+</div>
+
+<!-- 发布/编辑评价模态框 -->
+<div id="commentModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title" id="commentModalTitle">发布评价</h3>
+      <button class="modal-close" id="closeCommentModalBtn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="commentForm">
+        <input type="hidden" id="editCommentId">
+        <div class="form-group">
+          <label class="form-label">评分</label>
+          <div id="commentRatingStars"></div>
+          <input type="hidden" id="commentRatingValue" value="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">评价内容</label>
+          <textarea id="commentContent" class="form-textarea" placeholder="分享你的观影感受..." maxlength="500"></textarea>
+          <span class="form-hint" id="charCount">0/500</span>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelCommentBtn">取消</button>
+      <button class="btn btn-primary" id="submitCommentBtn">发布</button>
+    </div>
+  </div>
+</div>
+
+<!-- 删除评价确认模态框 -->
+<div id="deleteCommentModal" class="modal">
+  <div class="modal-content" style="max-width: 400px;">
+    <div class="modal-header">
+      <h3 class="modal-title">确认删除</h3>
+      <button class="modal-close" id="closeDeleteCommentModalBtn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>确定要删除这条评价吗？此操作不可恢复。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelDeleteCommentBtn">取消</button>
+      <button class="btn btn-danger" id="confirmDeleteCommentBtn">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script>
+  let movieId = null;
+  let movieDetail = null;
+  let comments = [];
+  let commentRating = 0;
+  let editingCommentId = null;
+  let deleteTargetCommentId = null;
+
+  // 页面初始化
+  document.addEventListener('DOMContentLoaded', async () => {
+    const user = getCurrentUser();
+    if (!user) {
+      window.location.href = 'index.html';
+      return;
+    }
+    document.getElementById('username').textContent = user.username || '用户';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    movieId = urlParams.get('id');
+
+    if (!movieId) {
+      window.location.href = 'dashboard.html';
+      return;
+    }
+
+    await loadMovieDetail();
+    await loadComments();
+    await loadAverageRating();
+    initCommentRatingStars();
+    initCharCount();
+    bindEvents();
+  });
+
+  // 加载电影详情
+  async function loadMovieDetail() {
+    try {
+      // 从收藏列表中获取电影详情
+      const result = await movieAPI.getAllMovies();
+      if (result.code === 200) {
+        movieDetail = result.data.find(m => m.movieId == movieId);
+        if (movieDetail) {
+          renderMovieDetail();
+        } else {
+          showToast('电影不存在', 'error');
+          setTimeout(() => window.location.href = 'dashboard.html', 1500);
+        }
+      }
+    } catch (error) {
+      console.error('加载电影详情失败:', error);
+      showToast('加载失败', 'error');
+    }
+  }
+
+  function renderMovieDetail() {
+    const container = document.getElementById('movieDetailContainer');
+    container.innerHTML = `
+                <div class="movie-detail-header">
+                    <img src="${movieDetail.posterUrl || 'https://via.placeholder.com/240x360?text=No+Poster'}"
+                         class="movie-detail-poster"
+                         onerror="this.src='https://via.placeholder.com/240x360?text=No+Poster'">
+                    <div class="movie-detail-info">
+                        <h1 class="movie-detail-title">${escapeHtml(movieDetail.movieName)}</h1>
+                        <div class="movie-detail-meta">
+                            <p>导演/演员：${escapeHtml(movieDetail.director || '未知')}</p>
+                            <p>年份：${movieDetail.year || '未知'}</p>
+                            <p>地区：${movieDetail.region || '未知'}</p>
+                            <p>类型：${movieDetail.genre || '未知'}</p>
+                        </div>
+                        <div class="my-rating">
+                            <span style="font-weight: 500;">我的评分：</span>
+                            <span id="myRatingStars">${movieDetail.personalRating ? renderStars(movieDetail.personalRating, 'small') : '暂无评分'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+  }
+
+  // 加载综合评分
+  async function loadAverageRating() {
+    try {
+      const result = await commentAPI.getAverageRating(movieId);
+      if (result.code === 200 && result.data && result.data.avgRating > 0) {
+        const avgRating = result.data.avgRating;
+        const count = result.data.count;
+
+        document.getElementById('averageRatingContainer').style.display = 'block';
+        document.getElementById('avgRatingStars').innerHTML = renderStars(avgRating, 'small');
+        document.getElementById('avgRatingValue').textContent = avgRating.toFixed(1);
+        document.getElementById('ratingCount').textContent = `(${count}人评价)`;
+      }
+    } catch (error) {
+      console.error('加载评分失败:', error);
+    }
+  }
+
+  // 加载评价列表
+  async function loadComments() {
+    try {
+      const result = await commentAPI.getCommentsByMovie(movieId);
+      if (result.code === 200) {
+        comments = result.data || [];
+        renderComments();
+      }
+    } catch (error) {
+      console.error('加载评论失败:', error);
+      showToast('加载评论失败', 'error');
+    }
+  }
+
+  function renderComments() {
+    const container = document.getElementById('commentsList');
+    const currentUser = getCurrentUser();
+
+    if (comments.length === 0) {
+      container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <p class="empty-state-text">暂无评价，成为第一个评价的人吧</p>
+                    </div>
+                `;
+      return;
+    }
+
+    container.innerHTML = comments.map(comment => {
+      const isOwner = currentUser && comment.userId === currentUser.userId;
+      return `
+                    <div class="comment-item">
+                        <div class="comment-header">
+                            <div class="comment-user">
+                                <div class="user-avatar">${(comment.username || '匿')[0]}</div>
+                                <span>${maskUsername(comment.username)}</span>
+                            </div>
+                            <span class="comment-time">${formatDate(comment.createTime)}</span>
+                        </div>
+                        <div class="comment-rating">${renderStars(comment.rating, 'small')}</div>
+                        <div class="comment-content">${escapeHtml(comment.content)}</div>
+                        ${isOwner ? `
+                            <div class="comment-actions">
+                                <button class="btn btn-secondary btn-sm edit-comment" data-id="${comment.commentId}">编辑</button>
+                                <button class="btn btn-danger btn-sm delete-comment" data-id="${comment.commentId}">删除</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+    }).join('');
+
+    // 绑定编辑删除事件
+    document.querySelectorAll('.edit-comment').forEach(btn => {
+      btn.onclick = () => openEditCommentModal(parseInt(btn.dataset.id));
+    });
+    document.querySelectorAll('.delete-comment').forEach(btn => {
+      btn.onclick = () => openDeleteCommentModal(parseInt(btn.dataset.id));
+    });
+  }
+
+  // 评分星星初始化
+  function initCommentRatingStars() {
+    const container = document.getElementById('commentRatingStars');
+    if (!container) return;
+    container.innerHTML = '';
+
+    for (let i = 1; i <= 5; i++) {
+      const star = document.createElement('span');
+      star.className = 'star';
+      star.innerHTML = i <= commentRating ? '★' : '☆';
+      star.style.fontSize = '24px';
+      star.style.cursor = 'pointer';
+      star.onclick = () => {
+        commentRating = i;
+        document.getElementById('commentRatingValue').value = i;
+        initCommentRatingStars();
+      };
+      container.appendChild(star);
+    }
+  }
+
+  function initCharCount() {
+    const textarea = document.getElementById('commentContent');
+    const charCount = document.getElementById('charCount');
+
+    textarea.addEventListener('input', () => {
+      const length = textarea.value.length;
+      charCount.textContent = `${length}/500`;
+      if (length > 500) {
+        charCount.style.color = 'var(--danger)';
+      } else {
+        charCount.style.color = '';
+      }
+    });
+  }
+
+  // 发布评价模态框
+  function openCommentModal() {
+    editingCommentId = null;
+    commentRating = 0;
+    document.getElementById('editCommentId').value = '';
+    document.getElementById('commentContent').value = '';
+    document.getElementById('commentModalTitle').textContent = '发布评价';
+    document.getElementById('charCount').textContent = '0/500';
+    initCommentRatingStars();
+    document.getElementById('commentModal').classList.add('show');
+  }
+
+  function openEditCommentModal(commentId) {
+    const comment = comments.find(c => c.commentId === commentId);
+    if (!comment) return;
+
+    editingCommentId = commentId;
+    commentRating = comment.rating;
+    document.getElementById('editCommentId').value = commentId;
+    document.getElementById('commentContent').value = comment.content;
+    document.getElementById('commentModalTitle').textContent = '编辑评价';
+    document.getElementById('charCount').textContent = `${comment.content.length}/500`;
+    initCommentRatingStars();
+    document.getElementById('commentModal').classList.add('show');
+  }
+
+  function closeCommentModal() {
+    document.getElementById('commentModal').classList.remove('show');
+  }
+
+  async function submitComment() {
+    const content = document.getElementById('commentContent').value.trim();
+
+    if (!content) {
+      showToast('请填写评价内容', 'error');
+      return;
+    }
+    if (content.length > 500) {
+      showToast('评价内容不能超过500字符', 'error');
+      return;
+    }
+    if (commentRating === 0) {
+      showToast('请选择评分', 'error');
+      return;
+    }
+
+    try {
+      let result;
+      if (editingCommentId) {
+        result = await commentAPI.updateComment(editingCommentId, {
+          rating: commentRating,
+          content: content
+        });
+      } else {
+        result = await commentAPI.addComment({
+          movieId: parseInt(movieId),
+          rating: commentRating,
+          content: content
+        });
+      }
+
+      if (result.code === 200) {
+        showToast(result.message, 'success');
+        closeCommentModal();
+        await loadComments();
+        await loadAverageRating();
+      } else {
+        showToast(result.message, 'error');
+      }
+    } catch (error) {
+      console.error('提交评论失败:', error);
+      showToast('操作失败', 'error');
+    }
+  }
+
+  // 删除评价
+  function openDeleteCommentModal(commentId) {
+    deleteTargetCommentId = commentId;
+    document.getElementById('deleteCommentModal').classList.add('show');
+  }
+
+  function closeDeleteCommentModal() {
+    deleteTargetCommentId = null;
+    document.getElementById('deleteCommentModal').classList.remove('show');
+  }
+
+  async function confirmDeleteComment() {
+    if (!deleteTargetCommentId) return;
+
+    try {
+      const result = await commentAPI.deleteComment(deleteTargetCommentId);
+      if (result.code === 200) {
+        showToast('删除成功', 'success');
+        closeDeleteCommentModal();
+        await loadComments();
+        await loadAverageRating();
+      } else {
+        showToast(result.message, 'error');
+      }
+    } catch (error) {
+      console.error('删除评论失败:', error);
+      showToast('删除失败', 'error');
+    }
+  }
+
+  function bindEvents() {
+    document.getElementById('openCommentBtn')?.addEventListener('click', openCommentModal);
+    document.getElementById('closeCommentModalBtn')?.addEventListener('click', closeCommentModal);
+    document.getElementById('cancelCommentBtn')?.addEventListener('click', closeCommentModal);
+    document.getElementById('submitCommentBtn')?.addEventListener('click', submitComment);
+    document.getElementById('closeDeleteCommentModalBtn')?.addEventListener('click', closeDeleteCommentModal);
+    document.getElementById('cancelDeleteCommentBtn')?.addEventListener('click', closeDeleteCommentModal);
+    document.getElementById('confirmDeleteCommentBtn')?.addEventListener('click', confirmDeleteComment);
+  }
+</script>
+</body>
+</html>

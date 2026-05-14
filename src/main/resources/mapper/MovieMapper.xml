@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movie.mapper.MovieMapper">
+
+    <resultMap id="MoviePublicMap" type="com.movie.entity.MoviePublic">
+        <id column="movie_id" property="movieId"/>
+        <result column="tmdb_id" property="tmdbId"/>
+        <result column="movie_name" property="movieName"/>
+        <result column="director" property="director"/>
+        <result column="year" property="year"/>
+        <result column="poster_url" property="posterUrl"/>
+        <result column="genre" property="genre"/>
+        <result column="region" property="region"/>
+        <result column="avg_rating" property="avgRating"/>
+        <result column="rating_count" property="ratingCount"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <resultMap id="MovieCollectionMap" type="com.movie.entity.MovieCollection">
+        <id column="collection_id" property="collectionId"/>
+        <result column="user_id" property="userId"/>
+        <result column="movie_id" property="movieId"/>
+        <result column="personal_rating" property="personalRating"/>
+        <result column="watch_status" property="watchStatus"/>
+        <result column="private_review" property="privateReview"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="movie_name" property="movieName"/>
+        <result column="director" property="director"/>
+        <result column="year" property="year"/>
+        <result column="poster_url" property="posterUrl"/>
+        <result column="genre" property="genre"/>
+        <result column="region" property="region"/>
+    </resultMap>
+
+    <select id="findMovieByName" resultMap="MoviePublicMap">
+        SELECT * FROM movie_public WHERE movie_name = #{movieName}
+    </select>
+
+    <insert id="insertMovie" useGeneratedKeys="true" keyProperty="movieId">
+        INSERT INTO movie_public (movie_name, director, year, poster_url, genre, region, tmdb_id)
+        VALUES (#{movieName}, #{director}, #{year}, #{posterUrl}, #{genre}, #{region}, #{tmdbId})
+    </insert>
+
+    <update id="updateMovieRating">
+        UPDATE movie_public
+        SET avg_rating = #{avgRating}, rating_count = #{ratingCount}
+        WHERE movie_id = #{movieId}
+    </update>
+
+    <select id="findCollectionsByUserId" resultMap="MovieCollectionMap">
+        SELECT c.*, m.movie_name, m.director, m.year, m.poster_url, m.genre, m.region
+        FROM movie_collection c
+        JOIN movie_public m ON c.movie_id = m.movie_id
+        WHERE c.user_id = #{userId}
+        ORDER BY c.create_time DESC
+    </select>
+
+    <select id="findCollectionById" resultMap="MovieCollectionMap">
+        SELECT c.*, m.movie_name, m.director, m.year, m.poster_url, m.genre, m.region
+        FROM movie_collection c
+        JOIN movie_public m ON c.movie_id = m.movie_id
+        WHERE c.collection_id = #{collectionId}
+    </select>
+
+    <select id="findCollectionByUserAndMovie" resultMap="MovieCollectionMap">
+        SELECT * FROM movie_collection
+        WHERE user_id = #{userId} AND movie_id = #{movieId}
+    </select>
+
+    <insert id="insertCollection" useGeneratedKeys="true" keyProperty="collectionId">
+        INSERT INTO movie_collection (user_id, movie_id, personal_rating, watch_status, private_review)
+        VALUES (#{userId}, #{movieId}, #{personalRating}, #{watchStatus}, #{privateReview})
+    </insert>
+
+    <update id="updateCollection">
+        UPDATE movie_collection
+        SET personal_rating = #{personalRating},
+        watch_status = #{watchStatus},
+        private_review = #{privateReview},
+        update_time = NOW()
+        WHERE collection_id = #{collectionId}
+    </update>
+
+    <delete id="deleteCollection">
+        DELETE FROM movie_collection WHERE collection_id = #{collectionId}
+    </delete>
+
+    <select id="searchCollections" resultMap="MovieCollectionMap">
+        SELECT c.*, m.movie_name, m.director, m.year, m.poster_url, m.genre, m.region
+        FROM movie_collection c
+        JOIN movie_public m ON c.movie_id = m.movie_id
+        WHERE c.user_id = #{userId}
+        <if test="keyword != null and keyword != ''">
+            AND m.movie_name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        <if test="director != null and director != ''">
+            AND m.director LIKE CONCAT('%', #{director}, '%')
+        </if>
+        <if test="minRating != null">
+            AND c.personal_rating >= #{minRating}
+        </if>
+        <if test="region != null and region != ''">
+            AND m.region = #{region}
+        </if>
+        <if test="genre != null and genre != ''">
+            AND m.genre = #{genre}
+        </if>
+        ORDER BY c.create_time DESC
+    </select>
+
+    <select id="findMovieByTmdbId" resultMap="MoviePublicMap">
+        SELECT * FROM movie_public WHERE tmdb_id = #{tmdbId}
+    </select>
+
+    <!-- 按综合评分排序的电影排行榜 -->
+    <select id="selectMoviesOrderByRating" resultType="java.util.HashMap">
+        SELECT
+            m.movie_id as movieId,
+            m.tmdb_id as tmdbId,
+            m.movie_name as movieName,
+            m.director,
+            m.year,
+            m.poster_url as posterUrl,
+            m.genre,
+            m.region,
+            m.avg_rating as avgRating,
+            m.rating_count as ratingCount,
+            (SELECT COUNT(*) FROM movie_comment c WHERE c.movie_id = m.movie_id) as commentCount
+        FROM movie_public m
+        WHERE m.avg_rating IS NOT NULL AND m.avg_rating > 0
+        ORDER BY m.avg_rating DESC, m.rating_count DESC
+            LIMIT 50
+    </select>
+
+    <!-- 按评论数排序的电影排行榜 -->
+    <select id="selectMoviesOrderByCommentCount" resultType="java.util.HashMap">
+        SELECT
+            m.movie_id as movieId,
+            m.tmdb_id as tmdbId,
+            m.movie_name as movieName,
+            m.director,
+            m.year,
+            m.poster_url as posterUrl,
+            m.genre,
+            m.region,
+            m.avg_rating as avgRating,
+            m.rating_count as ratingCount,
+            COUNT(c.comment_id) as commentCount
+        FROM movie_public m
+                 LEFT JOIN movie_comment c ON m.movie_id = c.movie_id
+        GROUP BY m.movie_id
+        HAVING commentCount > 0
+        ORDER BY commentCount DESC, m.avg_rating DESC
+            LIMIT 50
+    </select>
+</mapper>

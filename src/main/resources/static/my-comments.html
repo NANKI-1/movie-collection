@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>我的评价 - 银幕记忆</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .comment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .comment-item {
+            background: var(--white);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .comment-movie {
+            font-weight: 600;
+            color: var(--primary);
+            cursor: pointer;
+        }
+        .comment-movie:hover {
+            text-decoration: underline;
+        }
+        .comment-time {
+            font-size: 12px;
+            color: var(--gray-400);
+        }
+        .comment-content {
+            margin: 12px 0;
+            line-height: 1.5;
+        }
+        .comment-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--gray-100);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--white);
+            border-radius: var(--radius-lg);
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="navbar-container">
+        <div class="logo" onclick="window.location.href='index.html'">🎬 银幕记忆</div>
+        <div class="nav-menu">
+            <a href="top-rated.html">排行榜</a>
+            <a href="index.html">发现电影</a>
+            <a href="my-collections.html">我的收藏</a>
+            <a href="my-comments.html" class="active">我的评价</a>
+            <a href="profile.html">个人资料</a>
+        </div>
+        <div class="nav-links">
+            <div class="user-info">
+                <span class="username" id="username"></span>
+                <button class="logout-btn" onclick="logout()">退出</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <h2 style="margin-bottom: 20px;">我的评价</h2>
+    <div id="commentsList" class="comment-list"></div>
+    <div id="pagination" class="pagination"></div>
+</div>
+
+<!-- 编辑评价模态框 -->
+<div id="editCommentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">编辑评价</h3>
+            <button class="modal-close" id="closeEditModalBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">评分</label>
+                <div id="editRatingStars"></div>
+                <input type="hidden" id="editRatingValue" value="0">
+            </div>
+            <div class="form-group">
+                <label class="form-label">评价内容</label>
+                <textarea id="editContent" class="form-textarea" maxlength="500"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelEditBtn">取消</button>
+            <button class="btn btn-primary" id="submitEditBtn">保存</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script>
+    let myComments = [];
+    let currentPage = 1;
+    let pageSize = 10;
+    let editingCommentId = null;
+    let editRating = 0;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const user = getCurrentUser();
+        if (!user) {
+            sessionStorage.setItem('redirectAfterLogin', window.location.href);
+            window.location.href = 'login.html';
+            return;
+        }
+        document.getElementById('username').textContent = user.username || '用户';
+        await loadMyComments();
+    });
+
+    async function loadMyComments() {
+        try {
+            const result = await commentAPI.getMyComments();
+            if (result.code === 200) {
+                myComments = result.data || [];
+                renderComments();
+            }
+        } catch (error) {
+            console.error('加载评价失败:', error);
+            showToast('加载失败', 'error');
+        }
+    }
+
+    function renderComments() {
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageComments = myComments.slice(start, end);
+        const container = document.getElementById('commentsList');
+
+        if (pageComments.length === 0) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">💬</div><p>暂无评价，去<a href="index.html">发现电影</a>发表评价吧</p></div>`;
+            document.getElementById('pagination').innerHTML = '';
+            return;
+        }
+
+        container.innerHTML = pageComments.map(comment => `
+      <div class="comment-item">
+        <div class="comment-header">
+          <div class="comment-movie" onclick="window.location.href='movie-detail.html?id=${comment.movieId}'">
+            🎬 ${escapeHtml(comment.movieName)}
+          </div>
+          <span class="comment-time">${formatDate(comment.createTime)}</span>
+        </div>
+        <div class="comment-rating">${renderStars(comment.rating, 'small')}</div>
+        <div class="comment-content">${escapeHtml(comment.content)}</div>
+        <div class="comment-actions">
+          <button class="btn btn-secondary btn-sm edit-comment" data-id="${comment.commentId}" data-rating="${comment.rating}" data-content="${escapeHtml(comment.content)}">编辑</button>
+          <button class="btn btn-danger btn-sm delete-comment" data-id="${comment.commentId}">删除</button>
+        </div>
+      </div>
+    `).join('');
+
+        document.querySelectorAll('.edit-comment').forEach(btn => {
+            btn.onclick = () => {
+                const commentId = parseInt(btn.dataset.id);
+                const rating = parseFloat(btn.dataset.rating);
+                const content = btn.dataset.content;
+                openEditCommentModal(commentId, rating, content);
+            };
+        });
+
+        document.querySelectorAll('.delete-comment').forEach(btn => {
+            btn.onclick = async () => {
+                if (confirm('确定要删除这条评价吗？')) {
+                    const result = await commentAPI.deleteComment(parseInt(btn.dataset.id));
+                    if (result.code === 200) {
+                        showToast('删除成功', 'success');
+                        await loadMyComments();
+                    } else {
+                        showToast(result.message, 'error');
+                    }
+                }
+            };
+        });
+
+        renderPagination();
+    }
+
+    function renderPagination() {
+        const totalPages = Math.ceil(myComments.length / pageSize);
+        if (totalPages <= 1) {
+            document.getElementById('pagination').innerHTML = '';
+            return;
+        }
+        let html = '';
+        for (let i = 1; i <= totalPages; i++) {
+            html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+        }
+        document.getElementById('pagination').innerHTML = html;
+        document.querySelectorAll('.page-btn').forEach(btn => {
+            btn.onclick = () => {
+                currentPage = parseInt(btn.dataset.page);
+                renderComments();
+            };
+        });
+    }
+
+    function openEditCommentModal(commentId, rating, content) {
+        editingCommentId = commentId;
+        editRating = rating;
+        document.getElementById('editRatingValue').value = rating;
+        document.getElementById('editContent').value = content;
+        initEditRatingStars();
+        document.getElementById('editCommentModal').classList.add('show');
+    }
+
+    function initEditRatingStars() {
+        const container = document.getElementById('editRatingStars');
+        if (!container) return;
+        container.innerHTML = '';
+        for (let i = 1; i <= 5; i++) {
+            const star = document.createElement('span');
+            star.className = 'star';
+            star.innerHTML = i <= editRating ? '★' : '☆';
+            star.style.fontSize = '24px';
+            star.style.cursor = 'pointer';
+            star.onclick = () => {
+                editRating = i;
+                document.getElementById('editRatingValue').value = i;
+                initEditRatingStars();
+            };
+            container.appendChild(star);
+        }
+    }
+
+    function closeEditModal() {
+        document.getElementById('editCommentModal').classList.remove('show');
+    }
+
+    async function submitEdit() {
+        const content = document.getElementById('editContent').value.trim();
+        if (!content) {
+            showToast('请填写评价内容', 'error');
+            return;
+        }
+        if (editRating === 0) {
+            showToast('请选择评分', 'error');
+            return;
+        }
+        try {
+            const result = await commentAPI.updateComment(editingCommentId, {
+                rating: editRating,
+                content: content
+            });
+            if (result.code === 200) {
+                showToast('更新成功', 'success');
+                closeEditModal();
+                await loadMyComments();
+            } else {
+                showToast(result.message, 'error');
+            }
+        } catch (error) {
+            showToast('更新失败', 'error');
+        }
+    }
+
+    document.getElementById('closeEditModalBtn')?.addEventListener('click', closeEditModal);
+    document.getElementById('cancelEditBtn')?.addEventListener('click', closeEditModal);
+    document.getElementById('submitEditBtn')?.addEventListener('click', submitEdit);
+</script>
+</body>
+</html>
