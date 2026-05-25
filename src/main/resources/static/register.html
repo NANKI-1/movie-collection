@@ -5,6 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title>注册 - 银幕记忆</title>
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* 验证码输入行样式 */
+    .code-input-group {
+      display: flex;
+      gap: 12px;
+    }
+    .code-input-group .form-input {
+      flex: 1;
+    }
+    .code-input-group .btn {
+      white-space: nowrap;
+      min-width: 110px;
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
 </head>
 <body>
 <div class="register-page">
@@ -15,6 +33,7 @@
     </div>
 
     <div id="errorMessage" class="error-message"></div>
+    <div id="successMessage" class="success-message" style="background: #d1fae5; color: #059669; padding: 12px; border-radius: var(--radius-md); margin-bottom: 20px; font-size: 14px; display: none;"></div>
 
     <form id="registerForm">
       <div class="form-group">
@@ -39,14 +58,23 @@
 
       <div class="form-group">
         <label class="form-label">邮箱</label>
-        <input type="email" id="email" class="form-input" placeholder="用于密码找回" required>
+        <input type="email" id="email" class="form-input" placeholder="用于接收验证码和找回密码" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">验证码</label>
+        <div class="code-input-group">
+          <input type="text" id="code" class="form-input" placeholder="请输入验证码" required>
+          <button type="button" class="btn btn-secondary" id="sendCodeBtn">发送验证码</button>
+        </div>
+        <span class="form-hint" id="codeHint">点击发送验证码，5分钟内有效</span>
       </div>
 
       <button type="submit" id="registerBtn" class="btn btn-primary btn-block">注册</button>
     </form>
 
     <div class="register-footer">
-      已有账号？ <a href="index.html">立即登录</a>
+      已有账号？ <a href="login.html">立即登录</a>
     </div>
   </div>
 </div>
@@ -56,9 +84,14 @@
 <script>
   const form = document.getElementById('registerForm');
   const errorDiv = document.getElementById('errorMessage');
+  const successDiv = document.getElementById('successMessage');
   const registerBtn = document.getElementById('registerBtn');
   const passwordInput = document.getElementById('password');
+  const sendCodeBtn = document.getElementById('sendCodeBtn');
 
+  // 倒计时相关变量
+  let countdown = 60;
+  let timer = null;
   // 密码强度检测
   function checkPasswordStrength(password) {
     let strength = 0;
@@ -93,6 +126,83 @@
     }
   }
 
+  // 显示错误信息
+  function showError(message) {
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+    successDiv.style.display = 'none';
+    setTimeout(() => {
+      errorDiv.style.display = 'none';
+    }, 5000);
+  }
+
+  // 显示成功信息
+  function showSuccess(message) {
+    successDiv.textContent = message;
+    successDiv.style.display = 'block';
+    errorDiv.style.display = 'none';
+    setTimeout(() => {
+      successDiv.style.display = 'none';
+    }, 5000);
+  }
+
+  // 开始倒计时
+  function startCountdown() {
+    sendCodeBtn.disabled = true;
+    timer = setInterval(() => {
+      countdown--;
+      sendCodeBtn.textContent = `${countdown}秒后重试`;
+      if (countdown <= 0) {
+        clearInterval(timer);
+        sendCodeBtn.disabled = false;
+        sendCodeBtn.textContent = '发送验证码';
+        countdown = 60;
+      }
+    }, 1000);
+  }
+
+  // 发送验证码
+  sendCodeBtn.addEventListener('click', async () => {
+    const email = document.getElementById('email').value.trim();
+
+    // 验证邮箱
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      showError('请先填写邮箱');
+      document.getElementById('email').focus();
+      return;
+    }
+    if (!emailRegex.test(email)) {
+      showError('请输入有效的邮箱地址');
+      document.getElementById('email').focus();
+      return;
+    }
+
+    try {
+      sendCodeBtn.disabled = true;
+      sendCodeBtn.textContent = '发送中...';
+
+      const response = await fetch(`${API_BASE_URL}/user/send-code?email=${encodeURIComponent(email)}`, {
+        method: 'POST'
+      });
+      const result = await response.json();
+
+      if (result.code === 200) {
+        showSuccess(result.message || '验证码已发送，请查收邮件');
+        startCountdown();
+      } else {
+        showError(result.message || '发送失败，请稍后重试');
+        sendCodeBtn.disabled = false;
+        sendCodeBtn.textContent = '发送验证码';
+      }
+    } catch (error) {
+      console.error('发送验证码错误:', error);
+      showError('网络错误，请检查网络连接');
+      sendCodeBtn.disabled = false;
+      sendCodeBtn.textContent = '发送验证码';
+    }
+  });
+
   passwordInput.addEventListener('input', (e) => {
     checkPasswordStrength(e.target.value);
   });
@@ -104,34 +214,37 @@
     const password = passwordInput.value;
     const confirmPassword = document.getElementById('confirmPassword').value;
     const email = document.getElementById('email').value.trim();
+    const code = document.getElementById('code').value.trim();
 
     // 验证用户名
     const usernameRegex = /^[a-zA-Z0-9_]{4,20}$/;
     if (!usernameRegex.test(username)) {
-      errorDiv.textContent = '用户名必须为4-20位字母、数字或下划线';
-      errorDiv.style.display = 'block';
+      showError('用户名必须为4-20位字母、数字或下划线');
       return;
     }
 
     // 验证密码
     if (password.length < 6 || password.length > 32) {
-      errorDiv.textContent = '密码长度必须为6-32位';
-      errorDiv.style.display = 'block';
+      showError('密码长度必须为6-32位');
       return;
     }
 
     // 验证密码一致性
     if (password !== confirmPassword) {
-      errorDiv.textContent = '两次输入的密码不一致';
-      errorDiv.style.display = 'block';
+      showError('两次输入的密码不一致');
       return;
     }
 
     // 验证邮箱
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      errorDiv.textContent = '请输入有效的邮箱地址';
-      errorDiv.style.display = 'block';
+      showError('请输入有效的邮箱地址');
+      return;
+    }
+
+    // 验证验证码
+    if (!code) {
+      showError('请输入验证码');
       return;
     }
 
@@ -139,33 +252,36 @@
     registerBtn.innerHTML = '<span class="spinner"></span> 注册中...';
 
     try {
-      const result = await userAPI.register(username, password, email);
+      // 调用 userAPI.register，需要传递验证码
+      const result = await userAPI.register(username, password, email, code);
 
       if (result.code === 200) {
-        showToast('注册成功！正在跳转到登录页...', 'success');
+        showSuccess('注册成功！正在跳转到登录页...');
         setTimeout(() => {
-          window.location.href = 'index.html';
+          window.location.href = 'login.html';
         }, 1500);
       } else {
-        errorDiv.textContent = result.message || '注册失败';
-        errorDiv.style.display = 'block';
+        showError(result.message || '注册失败');
         registerBtn.disabled = false;
         registerBtn.innerHTML = '注册';
       }
     } catch (error) {
       console.error('注册错误:', error);
-      errorDiv.textContent = '网络错误，请检查后端服务是否启动';
-      errorDiv.style.display = 'block';
+      showError('网络错误，请检查后端服务是否启动');
       registerBtn.disabled = false;
       registerBtn.innerHTML = '注册';
     }
   });
 
   // 输入时隐藏错误
-  ['username', 'password', 'confirmPassword', 'email'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => {
-      errorDiv.style.display = 'none';
-    });
+  ['username', 'password', 'confirmPassword', 'email', 'code'].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.addEventListener('input', () => {
+        errorDiv.style.display = 'none';
+        successDiv.style.display = 'none';
+      });
+    }
   });
 </script>
 </body>
