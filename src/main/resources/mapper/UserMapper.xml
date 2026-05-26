@@ -41,4 +41,14 @@
             update_time = NOW()
         WHERE user_id = #{userId}
     </update>
+
+    <update id="updateEmail">
+        UPDATE user SET email = #{email}, update_time = NOW()
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="updateUsername">
+        UPDATE user SET username = #{username}, update_time = NOW()
+        WHERE user_id = #{userId}
+    </update>
 </mapper>

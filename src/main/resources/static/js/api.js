@@ -2,7 +2,7 @@
  * API 接口封装 - 调用后端 Spring Boot 服务
  */
 
-const API_BASE_URL = 'https://56a3d8bd.r22.cpolar.top';
+const API_BASE_URL = 'https://223421ad.r22.cpolar.top';
 
 // 获取 Token
 function getToken() {
@@ -47,10 +47,10 @@ async function request(url, options = {}) {
 
 // ==================== 用户相关 API ====================
 const userAPI = {
-    register: (username, password, email) => {
+    register: (username, password, email,code) => {
         return request('/user/register', {
             method: 'POST',
-            body: JSON.stringify({ username, password, email })
+            body: JSON.stringify({ username, password, email,code })
         });
     },
     login: (username, password) => {
@@ -63,6 +63,55 @@ const userAPI = {
         return request('/user/update', {
             method: 'PUT',
             body: JSON.stringify(data)
+        });
+    },
+    sendRegisterCode: (email) => {
+        return request(`/user/send-code?email=${encodeURIComponent(email)}`, {
+            method: 'POST'
+        });
+    },
+
+    // 发送找回密码验证码
+    sendResetCode: (email) => {
+        return request(`/user/send-reset-code?email=${encodeURIComponent(email)}`, {
+            method: 'POST'
+        });
+    },
+
+    // 重置密码
+    resetPassword: (email, code, newPassword) => {
+        return request('/user/reset-password', {
+            method: 'POST',
+            body: JSON.stringify({ email, code, newPassword })
+        });
+    },
+
+    updateUsername: (newUsername) => {
+        return request(`/user/update-username?newUsername=${encodeURIComponent(newUsername)}`, {
+            method: 'PUT'
+        });
+    },
+
+    // 发送修改邮箱验证码
+    sendEmailCode: (newEmail) => {
+        return request(`/user/send-email-code?newEmail=${encodeURIComponent(newEmail)}`, {
+            method: 'POST'
+        });
+    },
+
+    // 修改邮箱
+    updateEmail: (newEmail, code) => {
+        return request('/user/update-email', {
+            method: 'PUT',
+            body: JSON.stringify({ newEmail, code })
+        });
+    },
+
+    // 修改密码
+    updatePassword: (oldPassword, newPassword) => {
+        return request('/user/update-password', {
+            method: 'PUT',
+            body: JSON.stringify({ oldPassword, newPassword })
         });
     }
 };

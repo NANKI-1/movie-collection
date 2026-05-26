@@ -1,8 +1,6 @@
 package com.movie.service;
 
-import com.movie.dto.LoginRequest;
-import com.movie.dto.ProfileUpdateRequest;
-import com.movie.dto.RegisterRequest;
+import com.movie.dto.*;
 import com.movie.entity.User;
 import com.movie.mapper.UserMapper;
 import com.movie.util.JwtUtil;
@@ -19,6 +17,9 @@ public class UserService {
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private VerificationCodeService codeService;
+
     public Map<String, Object> register(RegisterRequest request) {
         Map<String, Object> result = new HashMap<>();
 
@@ -28,9 +29,11 @@ public class UserService {
             return result;
         }
 
+        User existingUserByEmail = userMapper.findByEmail(request.getEmail());
         if (userMapper.findByEmail(request.getEmail()) != null) {
             result.put("success", false);
-            result.put("message", "邮箱已被注册");
+            result.put("message", "该邮箱已被注册，用户名为：" + existingUserByEmail.getUsername() + "，\n请使用其他邮箱注册或者使用该账号进行登录");
+            result.put("existingUsername", existingUserByEmail.getUsername());  // 额外返回用户名
             return result;
         }
 
@@ -120,4 +123,157 @@ public class UserService {
         result.put("message", "资料更新成功");
         return result;
     }
+
+    public boolean isEmailRegistered(String email) {
+        return userMapper.findByEmail(email) != null;
+    }
+
+    /**
+     * 通过邮箱更新密码（找回密码用）
+     */
+    public boolean updatePasswordByEmail(String email, String newPassword) {
+        User user = userMapper.findByEmail(email);
+        if (user == null) {
+            return false;
+        }
+        user.setPassword(MD5Util.md5(newPassword));
+        int result = userMapper.updatePassword(user.getUserId(), user.getPassword());
+        return result > 0;
+    }
+
+    /**
+     * 重置密码（带验证码验证）
+     */
+    public Map<String, Object> resetPassword(ResetPasswordRequest request) {
+        Map<String, Object> result = new HashMap<>();
+
+        // 1. 验证邮箱是否存在
+        if (!isEmailRegistered(request.getEmail())) {
+            result.put("success", false);
+            result.put("message", "该邮箱未注册");
+            return result;
+        }
+
+        // 2. 验证验证码
+        if (!codeService.verifyCode(request.getEmail(), request.getCode())) {
+            result.put("success", false);
+            result.put("message", "验证码错误或已过期");
+            return result;
+        }
+
+        // 3. 更新密码
+        boolean success = updatePasswordByEmail(request.getEmail(), request.getNewPassword());
+
+        if (success) {
+            // 验证码使用后立即删除
+            codeService.deleteCode(request.getEmail());
+            result.put("success", true);
+            result.put("message", "密码重置成功");
+        } else {
+            result.put("success", false);
+            result.put("message", "密码重置失败，请稍后重试");
+        }
+
+        return result;
+    }
+
+    public Map<String, Object> updateEmail(Integer userId, UpdateEmailRequest request) {
+        Map<String, Object> result = new HashMap<>();
+
+        // 1. 验证新邮箱格式
+        if (!isValidEmail(request.getNewEmail())) {
+            result.put("success", false);
+            result.put("message", "邮箱格式不正确");
+            return result;
+        }
+
+        // 2. 检查新邮箱是否已被其他用户注册
+        User existingUser = userMapper.findByEmail(request.getNewEmail());
+        if (existingUser != null && !existingUser.getUserId().equals(userId)) {
+            result.put("success", false);
+            result.put("message", "该邮箱已被其他用户注册");
+            return result;
+        }
+
+        // 3. 验证验证码
+        if (!codeService.verifyCode(request.getNewEmail(), request.getCode())) {
+            result.put("success", false);
+            result.put("message", "验证码错误或已过期");
+            return result;
+        }
+
+        // 4. 更新邮箱
+        int updated = userMapper.updateEmail(userId, request.getNewEmail());
+        if (updated > 0) {
+            // 验证码使用后删除
+            codeService.deleteCode(request.getNewEmail());
+            result.put("success", true);
+            result.put("message", "邮箱修改成功");
+        } else {
+            result.put("success", false);
+            result.put("message", "邮箱修改失败");
+        }
+
+        return result;
+    }
+
+    /**
+     * 验证邮箱格式
+     */
+    private boolean isValidEmail(String email) {
+        if (email == null || email.isEmpty()) return false;
+        String regex = "^[A-Za-z0-9+_.-]+@(.+)$";
+        return email.matches(regex);
+    }
+
+    public boolean isUsernameExists(String username) {
+        return userMapper.findByUsername(username) != null;
+    }
+
+    public boolean updateUsername(Integer userId, String newUsername) {
+        return userMapper.updateUsername(userId, newUsername) > 0;
+    }
+
+    public User getUserByEmail(String email) {
+        return userMapper.findByEmail(email);
+    }
+
+    public Map<String, Object> updatePassword(Integer userId, PasswordUpdateRequest request) {
+        Map<String, Object> result = new HashMap<>();
+
+        User user = userMapper.findByUserId(userId);
+        if (user == null) {
+            result.put("success", false);
+            result.put("message", "用户不存在");
+            return result;
+        }
+
+        // 验证旧密码
+        if (!user.getPassword().equals(MD5Util.md5(request.getOldPassword()))) {
+            result.put("success", false);
+            result.put("message", "当前密码错误");
+            return result;
+        }
+
+        String newPasswordMd5 = MD5Util.md5(request.getNewPassword());
+        if (user.getPassword().equals(newPasswordMd5)) {
+            result.put("success", false);
+            result.put("message", "新密码不能与旧密码相同");
+            return result;
+        }
+
+        // 更新密码
+        int updated = userMapper.updatePassword(userId, MD5Util.md5(request.getNewPassword()));
+        if (updated > 0) {
+            result.put("success", true);
+            result.put("message", "密码修改成功");
+        } else {
+            result.put("success", false);
+            result.put("message", "密码修改失败");
+        }
+
+        return result;
+    }
+
+
 }

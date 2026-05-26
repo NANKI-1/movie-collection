@@ -12,4 +12,7 @@ public interface UserMapper {
     int insert(User user);
     int updatePassword(@Param("userId") Integer userId, @Param("password") String password);
     int updateUser(User user);
+    int updateEmail(@Param("userId") Integer userId, @Param("email") String email);
+    int updateUsername(@Param("userId") Integer userId, @Param("username") String username);
+
 }

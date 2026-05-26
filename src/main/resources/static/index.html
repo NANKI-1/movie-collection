@@ -273,34 +273,112 @@
       return;
     }
 
-    let html = '';
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, currentPage + 2);
+    let html = '<div class="pagination-container">';
 
-    if (currentPage > 1) {
-      html += `<button class="page-btn" data-page="${currentPage - 1}">上一页</button>`;
+    // 首页按钮
+    html += `<button class="page-btn ${currentPage === 1 ? 'disabled' : ''}"
+                    data-page="1" ${currentPage === 1 ? 'disabled' : ''}>首页</button>`;
+
+    // 上一页按钮
+    html += `<button class="page-btn ${currentPage === 1 ? 'disabled' : ''}"
+                    data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
+
+    // 页码按钮（动态显示，最多显示7个页码）
+    let startPage = Math.max(1, currentPage - 3);
+    let endPage = Math.min(totalPages, currentPage + 3);
+
+    // 调整起始页，确保显示足够多的页码
+    if (endPage - startPage < 6) {
+      if (startPage === 1) {
+        endPage = Math.min(totalPages, startPage + 6);
+      } else if (endPage === totalPages) {
+        startPage = Math.max(1, endPage - 6);
+      }
     }
 
+    // 如果起始页大于1，显示省略号
+    if (startPage > 1) {
+      html += `<span class="page-ellipsis">...</span>`;
+    }
+
+    // 页码按钮
     for (let i = startPage; i <= endPage; i++) {
       html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
     }
 
-    if (currentPage < totalPages) {
-      html += `<button class="page-btn" data-page="${currentPage + 1}">下一页</button>`;
+    // 如果结束页小于总页数，显示省略号
+    if (endPage < totalPages) {
+      html += `<span class="page-ellipsis">...</span>`;
     }
+
+    // 下一页按钮
+    html += `<button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}"
+                    data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>`;
+
+    // 尾页按钮
+    html += `<button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}"
+                    data-page="${totalPages}" ${currentPage === totalPages ? 'disabled' : ''}>尾页</button>`;
+
+    // 跳转输入框
+    html += `<div class="page-jump">
+                <span>跳转到</span>
+                <input type="number" id="jumpPageInput" class="page-jump-input"
+                       min="1" max="${totalPages}" value="${currentPage}"
+                       style="width: 60px; text-align: center;">
+                <span>页</span>
+                <button class="page-btn page-jump-btn" id="jumpPageBtn">GO</button>
+            </div>`;
+
+    html += '</div>';
 
     document.getElementById('pagination').innerHTML = html;
 
-    document.querySelectorAll('.page-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const page = parseInt(btn.dataset.page);
-        if (!isNaN(page) && page !== currentPage) {
-          currentPage = page;
+    // 绑定页码点击事件
+    document.querySelectorAll('.page-btn:not(.disabled)').forEach(btn => {
+      if (!btn.disabled) {
+        btn.addEventListener('click', () => {
+          const page = parseInt(btn.dataset.page);
+          if (!isNaN(page) && page !== currentPage && page >= 1 && page <= totalPages) {
+            currentPage = page;
+            searchMovies();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        });
+      }
+    });
+
+    // 绑定跳转按钮事件
+    const jumpBtn = document.getElementById('jumpPageBtn');
+    if (jumpBtn) {
+      jumpBtn.addEventListener('click', () => {
+        const jumpInput = document.getElementById('jumpPageInput');
+        let targetPage = parseInt(jumpInput.value);
+        if (isNaN(targetPage)) targetPage = 1;
+        targetPage = Math.max(1, Math.min(totalPages, targetPage));
+        if (targetPage !== currentPage) {
+          currentPage = targetPage;
           searchMovies();
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       });
-    });
+    }
+
+    // 回车键跳转
+    const jumpInput = document.getElementById('jumpPageInput');
+    if (jumpInput) {
+      jumpInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          let targetPage = parseInt(jumpInput.value);
+          if (isNaN(targetPage)) targetPage = 1;
+          targetPage = Math.max(1, Math.min(totalPages, targetPage));
+          if (targetPage !== currentPage) {
+            currentPage = targetPage;
+            searchMovies();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }
+      });
+    }
   }
 
   // 显示电影详情模态框
