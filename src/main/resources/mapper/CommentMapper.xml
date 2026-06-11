@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movie.mapper.CommentMapper">
+
+    <resultMap id="CommentMap" type="com.movie.entity.Comment">
+        <id column="comment_id" property="commentId"/>
+        <result column="movie_id" property="movieId"/>
+        <result column="user_id" property="userId"/>
+        <!-- ❌ 删除 rating 映射 -->
+        <result column="content" property="content"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="reply_to" property="replyTo"/>
+        <result column="is_edited" property="isEdited"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="username" property="username"/>
+        <result column="movie_name" property="movieName"/>
+        <result column="current_rating" property="currentRating"/>
+    </resultMap>
+
+    <select id="findCommentsByMovieId" resultMap="CommentMap">
+        SELECT c.*, u.username, m.movie_name, col.personal_rating as current_rating
+        FROM movie_comment c
+                 JOIN user u ON c.user_id = u.user_id
+                 JOIN movie_public m ON c.movie_id = m.movie_id
+                 LEFT JOIN movie_collection col ON col.user_id = c.user_id AND col.movie_id = c.movie_id
+        WHERE c.movie_id = #{movieId}
+        ORDER BY c.create_time DESC
+    </select>
+
+    <select id="findCommentById" resultMap="CommentMap">
+        SELECT comment_id, movie_id, user_id, content, like_count, reply_to, is_edited, create_time, update_time
+        FROM movie_comment WHERE comment_id = #{commentId}
+    </select>
+
+    <!-- insertComment 移除 rating -->
+    <insert id="insertComment" useGeneratedKeys="true" keyProperty="commentId">
+        INSERT INTO movie_comment (movie_id, user_id, content)
+        VALUES (#{movieId}, #{userId}, #{content})
+    </insert>
+
+    <!-- updateComment 移除 rating -->
+    <update id="updateComment">
+        UPDATE movie_comment
+        SET content = #{content},
+            is_edited = TRUE,
+            update_time = NOW()
+        WHERE comment_id = #{commentId}
+    </update>
+
+    <delete id="deleteComment">
+        DELETE FROM movie_comment WHERE comment_id = #{commentId}
+    </delete>
+
+    <select id="findCommentsByUserId" resultMap="CommentMap">
+        SELECT c.comment_id, c.movie_id, c.user_id, c.content, c.like_count, c.reply_to, c.is_edited, c.create_time, c.update_time,
+               u.username, m.movie_name
+        FROM movie_comment c
+                 JOIN user u ON c.user_id = u.user_id
+                 JOIN movie_public m ON c.movie_id = m.movie_id
+        WHERE c.user_id = #{userId}
+        ORDER BY c.create_time DESC
+    </select>
+
+    <!-- ❌ 删除以下所有评分统计相关的 SQL -->
+    <!-- getAverageRating, getRatingCount, getAverageRatingExcludeZero, getRatingCountExcludeZero -->
+
+    <select id="findCommentsByTmdbId" resultMap="CommentMap">
+        SELECT c.comment_id, c.movie_id, c.user_id, c.content, c.like_count, c.reply_to, c.is_edited, c.create_time, c.update_time,
+               u.username, m.movie_name
+        FROM movie_comment c
+                 JOIN user u ON c.user_id = u.user_id
+                 JOIN movie_public m ON c.movie_id = m.movie_id
+        WHERE m.tmdb_id = #{tmdbId}
+        ORDER BY c.create_time DESC
+    </select>
+
+    <!-- ❌ 删除以下 TMDB 评分统计相关的 SQL -->
+
+    <!-- 根据用户ID和电影ID查找公开评价 -->
+    <select id="findCommentByUserAndMovie" resultMap="CommentMap">
+        SELECT c.comment_id, c.movie_id, c.user_id, c.content, c.like_count, c.reply_to, c.is_edited, c.create_time, c.update_time,
+               u.username, m.movie_name
+        FROM movie_comment c
+                 JOIN user u ON c.user_id = u.user_id
+                 JOIN movie_public m ON c.movie_id = m.movie_id
+        WHERE c.user_id = #{userId} AND c.movie_id = #{movieId}
+            LIMIT 1
+    </select>
+
+    <!-- ❌ 删除 updateCommentRatingByUserAndMovie -->
+
+</mapper>

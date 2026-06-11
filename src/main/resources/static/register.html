@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>注册 - 银幕记忆</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* 验证码输入行样式 */
+    .code-input-group {
+      display: flex;
+      gap: 12px;
+    }
+    .code-input-group .form-input {
+      flex: 1;
+    }
+    .code-input-group .btn {
+      white-space: nowrap;
+      min-width: 110px;
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+<div class="register-page">
+  <div class="register-card">
+    <div class="register-header">
+      <h1 class="register-title">创建账号</h1>
+      <p class="register-subtitle">加入银幕记忆，记录你的电影时光</p>
+    </div>
+
+    <div id="errorMessage" class="error-message"></div>
+    <div id="successMessage" class="success-message" style="background: #d1fae5; color: #059669; padding: 12px; border-radius: var(--radius-md); margin-bottom: 20px; font-size: 14px; display: none;"></div>
+
+    <form id="registerForm">
+      <div class="form-group">
+        <label class="form-label">用户名</label>
+        <input type="text" id="username" class="form-input" placeholder="4-20个字符，仅支持字母、数字、下划线" required>
+        <span class="form-hint">4-20个字符，仅支持字母、数字、下划线</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">密码</label>
+        <input type="password" id="password" class="form-input" placeholder="6-32位字符，仅支持字母、数字、符号（不支持空格）" required>
+        <div class="password-strength">
+          <div class="password-strength-bar" id="strengthBar"></div>
+        </div>
+        <span class="form-hint password-strength-text" id="strengthText">请输入密码</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">确认密码</label>
+        <input type="password" id="confirmPassword" class="form-input" placeholder="请再次输入密码" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">邮箱</label>
+        <input type="email" id="email" class="form-input" placeholder="用于接收验证码和找回密码" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">验证码</label>
+        <div class="code-input-group">
+          <input type="text" id="code" class="form-input" placeholder="请输入验证码" required>
+          <button type="button" class="btn btn-secondary" id="sendCodeBtn">发送验证码</button>
+        </div>
+        <span class="form-hint" id="codeHint">点击发送验证码，5分钟内有效</span>
+      </div>
+
+      <button type="submit" id="registerBtn" class="btn btn-primary btn-block">注册</button>
+    </form>
+
+    <div class="register-footer">
+      已有账号？ <a href="login.html">立即登录</a>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script>
+  const form = document.getElementById('registerForm');
+  const errorDiv = document.getElementById('errorMessage');
+  const successDiv = document.getElementById('successMessage');
+  const registerBtn = document.getElementById('registerBtn');
+  const passwordInput = document.getElementById('password');
+  const sendCodeBtn = document.getElementById('sendCodeBtn');
+
+  // 倒计时相关变量
+  let countdown = 60;
+  let timer = null;
+  // 密码强度检测
+  function checkPasswordStrength(password) {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (password.match(/[a-z]/)) strength++;
+    if (password.match(/[A-Z]/)) strength++;
+    if (password.match(/[0-9]/)) strength++;
+    if (password.match(/[^a-zA-Z0-9]/)) strength++;
+
+    const bar = document.getElementById('strengthBar');
+    const text = document.getElementById('strengthText');
+
+    if (password.length === 0) {
+      bar.style.width = '0%';
+      bar.style.background = '';
+      text.textContent = '请输入密码';
+      return;
+    }
+
+    if (strength <= 2) {
+      bar.style.width = '33%';
+      bar.style.background = '#ef4444';
+      text.textContent = '弱密码';
+    } else if (strength <= 4) {
+      bar.style.width = '66%';
+      bar.style.background = '#f59e0b';
+      text.textContent = '中等密码';
+    } else {
+      bar.style.width = '100%';
+      bar.style.background = '#10b981';
+      text.textContent = '强密码';
+    }
+  }
+
+  // 显示错误信息
+  function showError(message) {
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+    successDiv.style.display = 'none';
+    setTimeout(() => {
+      errorDiv.style.display = 'none';
+    }, 5000);
+  }
+
+  // 显示成功信息
+  function showSuccess(message) {
+    successDiv.textContent = message;
+    successDiv.style.display = 'block';
+    errorDiv.style.display = 'none';
+    setTimeout(() => {
+      successDiv.style.display = 'none';
+    }, 5000);
+  }
+
+  // 开始倒计时
+  function startCountdown() {
+    sendCodeBtn.disabled = true;
+    timer = setInterval(() => {
+      countdown--;
+      sendCodeBtn.textContent = `${countdown}秒后重试`;
+      if (countdown <= 0) {
+        clearInterval(timer);
+        sendCodeBtn.disabled = false;
+        sendCodeBtn.textContent = '发送验证码';
+        countdown = 60;
+      }
+    }, 1000);
+  }
+
+  // 发送验证码
+  sendCodeBtn.addEventListener('click', async () => {
+    const email = document.getElementById('email').value.trim();
+
+    // 验证邮箱
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      showError('请先填写邮箱');
+      document.getElementById('email').focus();
+      return;
+    }
+    if (!emailRegex.test(email)) {
+      showError('请输入有效的邮箱地址');
+      document.getElementById('email').focus();
+      return;
+    }
+
+    try {
+      sendCodeBtn.disabled = true;
+      sendCodeBtn.textContent = '发送中...';
+
+      const response = await fetch(`${API_BASE_URL}/user/send-code?email=${encodeURIComponent(email)}`, {
+        method: 'POST'
+      });
+      const result = await response.json();
+
+      if (result.code === 200) {
+        showSuccess(result.message || '验证码已发送，请查收邮件');
+        startCountdown();
+      } else {
+        showError(result.message || '发送失败，请稍后重试');
+        sendCodeBtn.disabled = false;
+        sendCodeBtn.textContent = '发送验证码';
+      }
+    } catch (error) {
+      console.error('发送验证码错误:', error);
+      showError('网络错误，请检查网络连接');
+      sendCodeBtn.disabled = false;
+      sendCodeBtn.textContent = '发送验证码';
+    }
+  });
+
+  passwordInput.addEventListener('input', (e) => {
+    checkPasswordStrength(e.target.value);
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById('username').value.trim();
+    const password = passwordInput.value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const email = document.getElementById('email').value.trim();
+    const code = document.getElementById('code').value.trim();
+
+    // 验证用户名
+    const usernameRegex = /^[a-zA-Z0-9_]{4,20}$/;
+    if (!usernameRegex.test(username)) {
+      showError('用户名必须为4-20位字母、数字或下划线');
+      return;
+    }
+
+    // 验证密码长度
+    if (password.length < 6 || password.length > 32) {
+      showError('密码长度必须为6-32位');
+      return;
+    }
+
+    // 密码格式校验：不允许空格，只能包含数字、字母、符号
+    const passwordRegex = /^[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]+$/;
+    if (!passwordRegex.test(password)) {
+      showError('密码只能包含数字、字母和符号，不能包含空格');
+      return;
+    }
+
+    // 验证密码一致性
+    if (password !== confirmPassword) {
+      showError('两次输入的密码不一致');
+      return;
+    }
+
+    // 验证邮箱
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showError('请输入有效的邮箱地址');
+      return;
+    }
+
+    // 验证验证码
+    if (!code) {
+      showError('请输入验证码');
+      return;
+    }
+
+    registerBtn.disabled = true;
+    registerBtn.innerHTML = '<span class="spinner"></span> 注册中...';
+
+    try {
+      // 调用 userAPI.register，需要传递验证码
+      const result = await userAPI.register(username, password, email, code);
+
+      if (result.code === 200) {
+        showSuccess('注册成功！正在跳转到登录页...');
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 1500);
+      } else {
+        showError(result.message || '注册失败');
+        registerBtn.disabled = false;
+        registerBtn.innerHTML = '注册';
+      }
+    } catch (error) {
+      console.error('注册错误:', error);
+      showError('网络错误，请检查后端服务是否启动');
+      registerBtn.disabled = false;
+      registerBtn.innerHTML = '注册';
+    }
+  });
+
+  // 输入时隐藏错误
+  ['username', 'password', 'confirmPassword', 'email', 'code'].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.addEventListener('input', () => {
+        errorDiv.style.display = 'none';
+        successDiv.style.display = 'none';
+      });
+    }
+  });
+</script>
+</body>
+</html>

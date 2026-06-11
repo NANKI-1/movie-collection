@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>个人资料 - 银幕记忆</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .profile-card {
+      background: var(--white);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      max-width: 600px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    .profile-header {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      padding: 40px;
+      text-align: center;
+      color: white;
+    }
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      margin: 0 auto 16px;
+    }
+    .profile-username {
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .profile-body {
+      padding: 32px;
+    }
+    .info-row {
+      display: flex;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--gray-200);
+      flex-wrap: wrap;
+    }
+    .info-label {
+      width: 100px;
+      font-weight: 500;
+      color: var(--gray-600);
+    }
+    .info-value {
+      flex: 1;
+      color: var(--gray-800);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .edit-btn {
+      margin-top: 24px;
+      width: 100%;
+    }
+    .stats-grid {
+      display: flex;
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .stat-card {
+      flex: 1;
+      background: var(--gray-100);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-top: 4px;
+    }
+    .inline-edit {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .inline-edit input {
+      padding: 6px 10px;
+      border: 1px solid var(--gray-300);
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+    }
+    .code-input-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .code-input-group input {
+      flex: 1;
+      min-width: 120px;
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.75rem;
+    }
+    .error-message {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+    .success-message {
+      background: #d1fae5;
+      color: #059669;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-container">
+    <div class="logo" onclick="window.location.href='index.html'">🎬 银幕记忆</div>
+    <div class="nav-menu">
+      <a href="top-rated.html">排行榜</a>
+      <a href="index.html">发现电影</a>
+      <a href="my-collections.html">我的收藏</a>
+      <a href="my-comments.html">我的评价</a>
+      <a href="profile.html" class="active">个人资料</a>
+    </div>
+    <div class="nav-links">
+      <div class="user-info">
+        <span class="username" id="username"></span>
+        <button class="logout-btn" onclick="logout()">退出</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="profile-card">
+    <div class="profile-header">
+      <div class="profile-avatar">👤</div>
+      <div class="profile-username" id="profileUsername"></div>
+    </div>
+    <div class="profile-body">
+      <div id="errorMessage" class="error-message"></div>
+      <div id="successMessage" class="success-message"></div>
+
+      <div class="info-row">
+        <div class="info-label">用户名</div>
+        <div class="info-value" id="displayUsername"></div>
+      </div>
+
+      <div class="info-row" id="editUsernameRow" style="display: none;">
+        <div class="info-label">新用户名</div>
+        <div class="info-value">
+          <div class="inline-edit">
+            <input type="text" id="newUsername" placeholder="4-20位字母、数字或下划线">
+            <button class="btn btn-primary btn-sm" id="saveUsernameBtn">保存</button>
+            <button class="btn btn-secondary btn-sm" id="cancelUsernameBtn">取消</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <div class="info-label">邮箱</div>
+        <div class="info-value" id="displayEmail"></div>
+      </div>
+
+      <div class="info-row" id="editEmailRow" style="display: none;">
+        <div class="info-label">新邮箱</div>
+        <div class="info-value">
+          <div class="inline-edit">
+            <input type="email" id="newEmail" placeholder="请输入新邮箱">
+            <div class="code-input-group" style="margin-top: 8px;">
+              <input type="text" id="emailCode" placeholder="验证码">
+              <button class="btn btn-secondary btn-sm" id="sendEmailCodeBtn">发送验证码</button>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <button class="btn btn-primary btn-sm" id="saveEmailBtn">保存</button>
+              <button class="btn btn-secondary btn-sm" id="cancelEmailBtn">取消</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <div class="info-label">注册时间</div>
+        <div class="info-value" id="displayCreateTime"></div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="collectionCount">0</div>
+          <div class="stat-label">电影收藏</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="commentCount">0</div>
+          <div class="stat-label">发表评价</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; margin-top: 24px;">
+        <button class="btn btn-primary" id="editProfileBtn">编辑资料</button>
+        <button class="btn btn-secondary" id="changePasswordBtn">修改密码</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 修改密码模态框 -->
+<div id="passwordModal" class="modal">
+  <div class="modal-content" style="max-width: 400px;">
+    <div class="modal-header">
+      <h3 class="modal-title">修改密码</h3>
+      <button class="modal-close" id="closePasswordModalBtn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="passwordModalError" class="error-message" style="display: none;"></div>
+      <div id="passwordModalSuccess" class="success-message" style="display: none;"></div>
+      <div class="form-group">
+        <label class="form-label">当前密码</label>
+        <input type="password" id="oldPassword" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">新密码</label>
+        <input type="password" id="newPassword" class="form-input" placeholder="6-32位字符">
+      </div>
+      <div class="form-group">
+        <label class="form-label">确认新密码</label>
+        <input type="password" id="confirmPassword" class="form-input">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelPasswordBtn">取消</button>
+      <button class="btn btn-primary" id="submitPasswordBtn">确认修改</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script>
+  let userInfo = null;
+  let emailCountdown = 60;
+  let emailTimer = null;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const user = getCurrentUser();
+    if (!user) {
+      sessionStorage.setItem('redirectAfterLogin', window.location.href);
+      window.location.href = 'login.html';
+      return;
+    }
+    userInfo = user;
+    document.getElementById('username').textContent = user.username || '用户';
+    document.getElementById('profileUsername').textContent = user.username;
+    document.getElementById('displayUsername').textContent = user.username;
+    document.getElementById('displayEmail').textContent = user.email || '未设置';
+    if (user.createTime) {
+      // 尝试多种方式格式化
+      let formattedTime = '';
+      formattedTime = formatDate(user.createTime);
+      document.getElementById('displayCreateTime').textContent = formattedTime;
+    }
+
+    await loadStats();
+    bindEvents();
+  });
+
+  async function loadStats() {
+    try {
+      const movies = await movieAPI.getAllMovies();
+      const comments = await commentAPI.getMyComments();
+      document.getElementById('collectionCount').textContent = movies.data?.length || 0;
+      document.getElementById('commentCount').textContent = comments.data?.length || 0;
+    } catch (error) {
+      console.error('加载统计失败:', error);
+    }
+  }
+
+  function showError(msg) {
+    const errorDiv = document.getElementById('errorMessage');
+    const successDiv = document.getElementById('successMessage');
+    errorDiv.textContent = msg;
+    errorDiv.style.display = 'block';
+    successDiv.style.display = 'none';
+    setTimeout(() => {
+      errorDiv.style.display = 'none';
+    }, 5000);
+  }
+
+  function showSuccess(msg) {
+    const errorDiv = document.getElementById('errorMessage');
+    const successDiv = document.getElementById('successMessage');
+    successDiv.textContent = msg;
+    successDiv.style.display = 'block';
+    errorDiv.style.display = 'none';
+    setTimeout(() => {
+      successDiv.style.display = 'none';
+    }, 3000);
+  }
+
+  function bindEvents() {
+    document.getElementById('editProfileBtn').addEventListener('click', () => {
+      document.getElementById('editUsernameRow').style.display = 'flex';
+      document.getElementById('editEmailRow').style.display = 'flex';
+      document.getElementById('editProfileBtn').style.display = 'none';
+      document.getElementById('newUsername').value = userInfo.username;
+      document.getElementById('newEmail').value = userInfo.email || '';
+    });
+
+    document.getElementById('cancelUsernameBtn').addEventListener('click', () => {
+      document.getElementById('editUsernameRow').style.display = 'none';
+      document.getElementById('editEmailRow').style.display = 'none';
+      document.getElementById('editProfileBtn').style.display = 'flex';
+    });
+
+    document.getElementById('cancelEmailBtn').addEventListener('click', () => {
+      document.getElementById('editUsernameRow').style.display = 'none';
+      document.getElementById('editEmailRow').style.display = 'none';
+      document.getElementById('editProfileBtn').style.display = 'flex';
+    });
+
+    // 修改用户名
+    document.getElementById('saveUsernameBtn').addEventListener('click', async () => {
+      const newUsername = document.getElementById('newUsername').value.trim();
+      const usernameRegex = /^[a-zA-Z0-9_]{4,20}$/;
+      if (!usernameRegex.test(newUsername)) {
+        showError('用户名必须为4-20位字母、数字或下划线');
+        return;
+      }
+
+      try {
+        const result = await userAPI.updateUsername(newUsername);
+        if (result.code === 200) {
+          showSuccess('用户名修改成功，请重新登录');
+          setTimeout(() => {
+            logout();
+          }, 2000);
+        } else {
+          showError(result.message);
+        }
+      } catch (error) {
+        showError('修改失败');
+      }
+    });
+
+    // 发送修改邮箱验证码
+    document.getElementById('sendEmailCodeBtn').addEventListener('click', async () => {
+      const newEmail = document.getElementById('newEmail').value.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newEmail)) {
+        showError('请输入有效的邮箱地址');
+        return;
+      }
+
+      try {
+        const sendBtn = document.getElementById('sendEmailCodeBtn');
+        sendBtn.disabled = true;
+        sendBtn.textContent = '发送中...';
+
+        const result = await userAPI.sendEmailCode(newEmail);
+
+        if (result.code === 200) {
+          showSuccess('验证码已发送至新邮箱');
+          startEmailCountdown();
+        } else {
+          showError(result.message);
+          sendBtn.disabled = false;
+          sendBtn.textContent = '发送验证码';
+        }
+      } catch (error) {
+        showError('发送失败');
+        document.getElementById('sendEmailCodeBtn').disabled = false;
+        document.getElementById('sendEmailCodeBtn').textContent = '发送验证码';
+      }
+    });
+
+    // 保存新邮箱
+    document.getElementById('saveEmailBtn').addEventListener('click', async () => {
+      const newEmail = document.getElementById('newEmail').value.trim();
+      const code = document.getElementById('emailCode').value.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!emailRegex.test(newEmail)) {
+        showError('请输入有效的邮箱地址');
+        return;
+      }
+      if (!code) {
+        showError('请输入验证码');
+        return;
+      }
+
+      try {
+        const result = await userAPI.updateEmail(newEmail, code);
+        if (result.code === 200) {
+          showSuccess('邮箱修改成功，请重新登录');
+          setTimeout(() => {
+            logout();
+          }, 2000);
+        } else {
+          showError(result.message);
+        }
+      } catch (error) {
+        showError('修改失败');
+      }
+    });
+
+    // 修改密码
+    document.getElementById('changePasswordBtn').addEventListener('click', () => {
+      document.getElementById('oldPassword').value = '';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmPassword').value = '';
+      document.getElementById('passwordModal').classList.add('show');
+    });
+
+    document.getElementById('closePasswordModalBtn').addEventListener('click', () => {
+      document.getElementById('passwordModal').classList.remove('show');
+    });
+
+    document.getElementById('cancelPasswordBtn').addEventListener('click', () => {
+      document.getElementById('passwordModal').classList.remove('show');
+    });
+
+    document.getElementById('submitPasswordBtn').addEventListener('click', async () => {
+      const oldPassword = document.getElementById('oldPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      // 清空之前的提示
+      document.getElementById('passwordModalError').style.display = 'none';
+      document.getElementById('passwordModalSuccess').style.display = 'none';
+
+      // 非空校验
+      if (!oldPassword || !newPassword) {
+        showPasswordModalError('请填写完整信息');
+        return;
+      }
+
+      // 密码长度校验
+      if (newPassword.length < 6) {
+        showPasswordModalError('新密码长度至少6位');
+        return;
+      }
+
+      // 密码格式校验：不允许空格，只能包含数字、字母、符号
+      const passwordRegex = /^[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]+$/;
+      if (!passwordRegex.test(newPassword)) {
+        showPasswordModalError('密码只能包含数字、字母和符号，不能包含空格');
+        return;
+      }
+
+      // 检查新密码是否与旧密码相同
+      if (oldPassword === newPassword) {
+        showPasswordModalError('新密码不能与旧密码相同');
+        return;
+      }
+
+      // 确认密码校验
+      if (newPassword !== confirmPassword) {
+        showPasswordModalError('两次输入的新密码不一致');
+        return;
+      }
+
+      // 禁用按钮，防止重复提交
+      const submitBtn = document.getElementById('submitPasswordBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '修改中...';
+
+      try {
+        const result = await userAPI.updatePassword(oldPassword, newPassword);
+        if (result.code === 200) {
+          showPasswordModalSuccess('密码修改成功，即将退出登录');
+          setTimeout(() => {
+            logout();
+          }, 2000);
+        } else {
+          showPasswordModalError(result.message || '修改失败');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '确认修改';
+        }
+      } catch (error) {
+        console.error('修改密码错误:', error);
+        showPasswordModalError('网络错误，请稍后重试');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '确认修改';
+      }
+    });
+  }
+
+  function startEmailCountdown() {
+    const btn = document.getElementById('sendEmailCodeBtn');
+    emailTimer = setInterval(() => {
+      emailCountdown--;
+      btn.textContent = `${emailCountdown}秒后重试`;
+      if (emailCountdown <= 0) {
+        clearInterval(emailTimer);
+        btn.disabled = false;
+        btn.textContent = '发送验证码';
+        emailCountdown = 60;
+      }
+    }, 1000);
+  }
+
+  // 在模态框内显示错误信息
+  function showPasswordModalError(msg) {
+    const errorDiv = document.getElementById('passwordModalError');
+    const successDiv = document.getElementById('passwordModalSuccess');
+    errorDiv.textContent = msg;
+    errorDiv.style.display = 'block';
+    successDiv.style.display = 'none';
+    setTimeout(() => {
+      errorDiv.style.display = 'none';
+    }, 3000);
+  }
+
+  // 在模态框内显示成功信息
+  function showPasswordModalSuccess(msg) {
+    const errorDiv = document.getElementById('passwordModalError');
+    const successDiv = document.getElementById('passwordModalSuccess');
+    successDiv.textContent = msg;
+    successDiv.style.display = 'block';
+    errorDiv.style.display = 'none';
+    setTimeout(() => {
+      successDiv.style.display = 'none';
+    }, 2000);
+  }
+
+  // 关闭模态框时清空内容
+  function closePasswordModal() {
+    const modal = document.getElementById('passwordModal');
+    modal.classList.remove('show');
+
+    // 清空输入框
+    document.getElementById('oldPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+
+    // 清空提示
+    document.getElementById('passwordModalError').style.display = 'none';
+    document.getElementById('passwordModalSuccess').style.display = 'none';
+
+    // 恢复按钮状态
+    const submitBtn = document.getElementById('submitPasswordBtn');
+    submitBtn.disabled = false;
+    submitBtn.textContent = '确认修改';
+  }
+
+  // 绑定关闭事件
+  document.getElementById('closePasswordModalBtn').addEventListener('click', closePasswordModal);
+  document.getElementById('cancelPasswordBtn').addEventListener('click', closePasswordModal);
+</script>
+</body>
+</html>

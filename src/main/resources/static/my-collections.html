@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>我的收藏 - 银幕记忆</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="navbar-container">
+        <div class="logo" onclick="window.location.href='index.html'">🎬 银幕记忆</div>
+        <div class="nav-menu">
+            <a href="top-rated.html">排行榜</a>
+            <a href="index.html">发现电影</a>
+            <a href="my-collections.html" class="active">我的收藏</a>
+            <a href="my-comments.html">我的评价</a>
+            <a href="profile.html">个人资料</a>
+        </div>
+        <div class="nav-links">
+            <div class="user-info">
+                <span class="username" id="username"></span>
+                <button class="logout-btn" onclick="logout()">退出</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <h2 style="margin-bottom: 20px;">我的电影收藏</h2>
+
+    <div class="filter-section">
+        <div class="search-bar">
+            <input type="text" id="searchKeyword" placeholder="搜索电影名称...">
+            <button class="btn btn-primary" id="searchBtn">搜索</button>
+        </div>
+        <div class="advanced-filters" id="advancedFilters" style="display: none;">
+            <div class="filter-item">
+                <label class="form-label">导演/演员</label>
+                <input type="text" id="filterDirector" class="form-input" placeholder="输入导演或演员姓名">
+            </div>
+            <div class="filter-item">
+                <label class="form-label">评分区间</label>
+                <select id="filterRating" class="form-select">
+                    <option value="">全部</option>
+                    <option value="4.5">4.5星及以上</option>
+                    <option value="4">4星及以上</option>
+                    <option value="3.5">3.5星及以上</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label class="form-label">地区</label>
+                <select id="filterRegion" class="form-select">
+                    <option value="">全部</option>
+                    <option value="美国">美国</option>
+                    <option value="中国">中国</option>
+                    <option value="日本">日本</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label class="form-label">类型</label>
+                <select id="filterGenre" class="form-select">
+                    <option value="">全部</option>
+                    <option value="动作">动作</option>
+                    <option value="喜剧">喜剧</option>
+                    <option value="爱情">爱情</option>
+                    <option value="科幻">科幻</option>
+                </select>
+            </div>
+        </div>
+        <div class="filter-actions">
+            <button class="btn btn-secondary" id="toggleFiltersBtn">高级筛选</button>
+            <button class="btn btn-secondary" id="resetFiltersBtn">重置</button>
+            <button class="btn btn-primary" id="applyFiltersBtn">查询</button>
+        </div>
+    </div>
+
+    <div id="moviesGrid" class="movies-grid"></div>
+    <div id="pagination" class="pagination"></div>
+</div>
+
+<!-- 编辑电影模态框 -->
+<div id="movieModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">编辑电影</h3>
+            <button class="modal-close" id="closeModalBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="movieForm">
+                <input type="hidden" id="editCollectionId">
+                <div class="form-group">
+                    <label class="form-label">电影名称</label>
+                    <input type="text" id="movieName" class="form-input" readonly disabled>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">个人评分</label>
+                    <div id="ratingStars"></div>
+                    <input type="hidden" id="personalRating" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">观影状态</label>
+                    <select id="watchStatus" class="form-select">
+                        <option value="想看">想看</option>
+                        <option value="已看">已看</option>
+                        <option value="不感兴趣">不感兴趣</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">私人影评</label>
+                    <textarea id="privateReview" class="form-textarea" placeholder="写下你的私人观影感受（仅自己可见）"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelModalBtn">取消</button>
+            <button class="btn btn-primary" id="saveMovieBtn">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3 class="modal-title">确认删除</h3>
+            <button class="modal-close" id="closeDeleteModalBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>确定要删除该电影收藏吗？此操作不可恢复。</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelDeleteBtn">取消</button>
+            <button class="btn btn-danger" id="confirmDeleteBtn">确认删除</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script>
+    let currentMovies = [];
+    let currentPage = 1;
+    let pageSize = 12;
+    let deleteTargetId = null;
+    let currentRating = 0;
+    let filtersVisible = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const user = getCurrentUser();
+        if (!user) {
+            sessionStorage.setItem('redirectAfterLogin', window.location.href);
+            window.location.href = 'login.html';
+            return;
+        }
+        document.getElementById('username').textContent = user.username || '用户';
+        initRatingStars();
+        loadMovies();
+        bindEvents();
+    });
+
+    function initRatingStars() {
+        const container = document.getElementById('ratingStars');
+        if (!container) return;
+        container.innerHTML = '';
+        currentRating = 0;
+
+        for (let i = 1; i <= 5; i++) {
+            const star = document.createElement('span');
+            star.className = 'star';
+            star.setAttribute('data-value', i);
+            star.innerHTML = '★';
+            star.style.fontSize = '32px';
+            star.style.cursor = 'pointer';
+            star.style.display = 'inline-block';
+            star.style.position = 'relative';
+
+            updateStarDisplay(star, i, currentRating);
+
+            star.onclick = (function(starValue) {
+                return function(e) {
+                    const rect = this.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const starWidth = rect.width;
+                    const isHalf = mouseX < starWidth / 2;
+                    let newRating = starValue;
+                    if (isHalf) {
+                        newRating = starValue - 0.5;
+                        if (newRating < 0) newRating = 0;
+                    }
+                    setRating(newRating);
+                };
+            })(i);
+
+            star.onmousemove = (function(starValue) {
+                return function(e) {
+                    const rect = this.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const starWidth = rect.width;
+                    const isHalf = mouseX < starWidth / 2;
+                    const previewValue = isHalf ? starValue - 0.5 : starValue;
+                    previewRating(previewValue);
+                };
+            })(i);
+
+            star.onmouseleave = () => resetStarsDisplay();
+
+            container.appendChild(star);
+        }
+    }
+
+    // 更新单个星星的显示
+    function updateStarDisplay(star, starValue, rating) {
+        // 清除半星样式
+        star.classList.remove('half-star');
+        star.style.color = '';
+
+        if (rating >= starValue) {
+            // 整星全亮
+            star.style.color = '#fbbf24';
+        } else if (rating >= starValue - 0.5) {
+            // 半星：左半金色，右半灰色
+            star.classList.add('half-star');
+            star.style.color = '#d1d5db';
+        } else {
+            // 无星
+            star.style.color = '#d1d5db';
+        }
+    }
+
+    // 预览评分（鼠标悬停时）
+    function previewRating(previewValue) {
+        const allStars = document.querySelectorAll('#ratingStars .star');
+        allStars.forEach((star, index) => {
+            const starValue = index + 1;
+            star.classList.remove('half-star');
+
+            if (previewValue >= starValue) {
+                star.style.color = '#fbbf24';
+            } else if (previewValue >= starValue - 0.5) {
+                star.classList.add('half-star');
+                star.style.color = '#d1d5db';
+            } else {
+                star.style.color = '#d1d5db';
+            }
+        });
+
+        // 显示预览分数
+        const ratingDisplay = document.getElementById('currentRatingDisplay');
+        if (ratingDisplay) {
+            ratingDisplay.textContent = previewValue.toFixed(1);
+            ratingDisplay.style.color = '#f59e0b';
+        }
+    }
+
+    // 重置星星显示为当前评分
+    function resetStarsDisplay() {
+        const allStars = document.querySelectorAll('#ratingStars .star');
+        allStars.forEach((star, index) => {
+            const starValue = index + 1;
+            updateStarDisplay(star, starValue, currentRating);
+        });
+
+        // 恢复显示当前评分
+        const ratingDisplay = document.getElementById('currentRatingDisplay');
+        if (ratingDisplay) {
+            ratingDisplay.textContent = currentRating.toFixed(1);
+            ratingDisplay.style.color = '';
+        }
+    }
+
+    // 设置评分
+    function setRating(value) {
+        currentRating = value;
+        document.getElementById('personalRating').value = value;
+
+        // 更新所有星星的显示
+        const allStars = document.querySelectorAll('#ratingStars .star');
+        allStars.forEach((star, index) => {
+            const starValue = index + 1;
+            updateStarDisplay(star, starValue, currentRating);
+        });
+
+        // 更新评分显示
+        const ratingDisplay = document.getElementById('currentRatingDisplay');
+        if (ratingDisplay) {
+            ratingDisplay.textContent = currentRating.toFixed(1);
+        }
+    }
+
+    // 更新编辑时的评分显示
+    function updateRatingStarsDisplay() {
+        const allStars = document.querySelectorAll('#ratingStars .star');
+        allStars.forEach((star, index) => {
+            const starValue = index + 1;
+            updateStarDisplay(star, starValue, currentRating);
+        });
+
+        const ratingDisplay = document.getElementById('currentRatingDisplay');
+        if (ratingDisplay) {
+            ratingDisplay.textContent = currentRating.toFixed(1);
+        }
+        document.getElementById('personalRating').value = currentRating;
+    }
+
+    async function loadMovies() {
+        try {
+            const result = await movieAPI.getAllMovies();
+            if (result.code === 200) {
+                currentMovies = result.data || [];
+                renderMovies();
+            } else {
+                showToast(result.message || '加载失败', 'error');
+            }
+        } catch (error) {
+            console.error('加载电影失败:', error);
+            showToast('加载电影列表失败', 'error');
+        }
+    }
+
+    function renderMovies() {
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageMovies = currentMovies.slice(start, end);
+        const grid = document.getElementById('moviesGrid');
+
+        if (pageMovies.length === 0) {
+            grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🎬</div><p>暂无收藏，去<a href="index.html">发现电影</a>添加吧</p></div>`;
+            document.getElementById('pagination').innerHTML = '';
+            return;
+        }
+
+        grid.innerHTML = pageMovies.map(movie => `
+      <div class="card movie-card" data-movie-id="${movie.movieId}">
+        <img src="${movie.posterUrl || 'https://via.placeholder.com/300x400?text=No+Poster'}"
+             class="movie-poster"
+             alt="${escapeHtml(movie.movieName)}"
+             onerror="this.src='https://via.placeholder.com/300x400?text=No+Poster'">
+        <div class="movie-info">
+          <h3 class="movie-title">${escapeHtml(movie.movieName)}</h3>
+          <p class="movie-director"><strong>导演：</strong>${escapeHtml(movie.director || '未知')}</p>
+          <p class="movie-year"><strong>年份：</strong>${movie.year || '未知'}</p>
+          <p class="movie-genre"><strong>类型：</strong>${escapeHtml(movie.genre || '未知')}</p>
+          <p class="movie-region"><strong>地区：</strong>${escapeHtml(movie.region || '未知')}</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+            <div><strong>我的评分：</strong>${renderStars(movie.personalRating || 0, 'small')}</div>
+            <span class="watch-status ${movie.watchStatus}">${movie.watchStatus}</span>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button class="btn btn-secondary btn-sm edit-movie" data-id="${movie.collectionId}">编辑</button>
+            <button class="btn btn-danger btn-sm delete-movie" data-id="${movie.collectionId}">删除</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+        // 绑定点击查看详情事件
+        document.querySelectorAll('.movie-card').forEach(card => {
+            const movieId = card.dataset.movieId;
+            card.addEventListener('click', (e) => {
+                if (e.target.classList.contains('edit-movie') ||
+                    e.target.classList.contains('delete-movie') ||
+                    e.target.tagName === 'BUTTON') return;
+                // 跳转到电影详情页（可以新建一个页面或使用模态框）
+                window.location.href = `movie-detail.html?id=${movieId}`;
+            });
+        });
+
+        document.querySelectorAll('.edit-movie').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                openEditMovieModal(parseInt(btn.dataset.id));
+            };
+        });
+
+        document.querySelectorAll('.delete-movie').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                openDeleteModal(parseInt(btn.dataset.id));
+            };
+        });
+
+        renderPagination();
+    }
+
+    function renderPagination() {
+        const totalPages = Math.ceil(currentMovies.length / pageSize);
+        if (totalPages <= 1) {
+            document.getElementById('pagination').innerHTML = '';
+            return;
+        }
+        let html = '';
+        for (let i = 1; i <= totalPages; i++) {
+            html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+        }
+        document.getElementById('pagination').innerHTML = html;
+        document.querySelectorAll('.page-btn').forEach(btn => {
+            btn.onclick = () => {
+                currentPage = parseInt(btn.dataset.page);
+                renderMovies();
+            };
+        });
+    }
+
+    async function searchMovies() {
+        const keyword = document.getElementById('searchKeyword').value;
+        if (!keyword) {
+            await loadMovies();
+            return;
+        }
+        try {
+            const result = await movieAPI.searchMovies({ keyword });
+            if (result.code === 200) {
+                currentMovies = result.data || [];
+                currentPage = 1;
+                renderMovies();
+            }
+        } catch (error) {
+            showToast('搜索失败', 'error');
+        }
+    }
+
+    async function applyFilters() {
+        const params = {
+            director: document.getElementById('filterDirector').value,
+            minRating: document.getElementById('filterRating').value,
+            region: document.getElementById('filterRegion').value,
+            genre: document.getElementById('filterGenre').value
+        };
+        Object.keys(params).forEach(key => {
+            if (!params[key] || params[key] === '全部') delete params[key];
+        });
+        try {
+            const result = await movieAPI.searchMovies(params);
+            if (result.code === 200) {
+                currentMovies = result.data || [];
+                currentPage = 1;
+                renderMovies();
+            }
+        } catch (error) {
+            showToast('筛选失败', 'error');
+        }
+    }
+
+    function resetFilters() {
+        document.getElementById('searchKeyword').value = '';
+        document.getElementById('filterDirector').value = '';
+        document.getElementById('filterRating').value = '';
+        document.getElementById('filterRegion').value = '';
+        document.getElementById('filterGenre').value = '';
+        loadMovies();
+    }
+
+    function toggleAdvancedFilters() {
+        filtersVisible = !filtersVisible;
+        document.getElementById('advancedFilters').style.display = filtersVisible ? 'flex' : 'none';
+        document.getElementById('toggleFiltersBtn').textContent = filtersVisible ? '收起筛选' : '高级筛选';
+    }
+
+    function openEditMovieModal(collectionId) {
+        const movie = currentMovies.find(m => m.collectionId === collectionId);
+        if (!movie) return;
+        document.getElementById('modalTitle').textContent = '编辑电影';
+        document.getElementById('editCollectionId').value = movie.collectionId;
+        document.getElementById('movieName').value = movie.movieName || '';
+        document.getElementById('watchStatus').value = movie.watchStatus || '想看';
+        document.getElementById('privateReview').value = movie.privateReview || '';
+        currentRating = movie.personalRating || 0;
+        updateRatingStarsDisplay();
+        document.getElementById('movieModal').classList.add('show');
+    }
+
+    function closeMovieModal() {
+        document.getElementById('movieModal').classList.remove('show');
+    }
+
+    async function saveMovie() {
+        const collectionId = document.getElementById('editCollectionId').value;
+        const movieData = {
+            personalRating: currentRating,
+            watchStatus: document.getElementById('watchStatus').value,
+            privateReview: document.getElementById('privateReview').value
+        };
+        try {
+            const result = await movieAPI.updateMovie(collectionId, movieData);
+            if (result.code === 200) {
+                showToast('更新成功', 'success');
+                closeMovieModal();
+                await loadMovies();
+            } else {
+                showToast(result.message, 'error');
+            }
+        } catch (error) {
+            showToast('保存失败', 'error');
+        }
+    }
+
+    function openDeleteModal(collectionId) {
+        deleteTargetId = collectionId;
+        document.getElementById('deleteModal').classList.add('show');
+    }
+
+    function closeDeleteModal() {
+        deleteTargetId = null;
+        document.getElementById('deleteModal').classList.remove('show');
+    }
+
+    async function confirmDelete() {
+        if (!deleteTargetId) return;
+        try {
+            const result = await movieAPI.deleteMovie(deleteTargetId);
+            if (result.code === 200) {
+                showToast('删除成功', 'success');
+                closeDeleteModal();
+                await loadMovies();
+            } else {
+                showToast(result.message, 'error');
+            }
+        } catch (error) {
+            showToast('删除失败', 'error');
+        }
+    }
+
+    function bindEvents() {
+        document.getElementById('searchBtn')?.addEventListener('click', searchMovies);
+        document.getElementById('resetFiltersBtn')?.addEventListener('click', resetFilters);
+        document.getElementById('applyFiltersBtn')?.addEventListener('click', applyFilters);
+        document.getElementById('toggleFiltersBtn')?.addEventListener('click', toggleAdvancedFilters);
+        document.getElementById('closeModalBtn')?.addEventListener('click', closeMovieModal);
+        document.getElementById('cancelModalBtn')?.addEventListener('click', closeMovieModal);
+        document.getElementById('saveMovieBtn')?.addEventListener('click', saveMovie);
+        document.getElementById('closeDeleteModalBtn')?.addEventListener('click', closeDeleteModal);
+        document.getElementById('cancelDeleteBtn')?.addEventListener('click', closeDeleteModal);
+        document.getElementById('confirmDeleteBtn')?.addEventListener('click', confirmDelete);
+    }
+</script>
+</body>
+</html>
