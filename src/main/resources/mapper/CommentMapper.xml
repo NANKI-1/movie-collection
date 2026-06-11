@@ -7,7 +7,6 @@
         <id column="comment_id" property="commentId"/>
         <result column="movie_id" property="movieId"/>
         <result column="user_id" property="userId"/>
-        <!-- ❌ 删除 rating 映射 -->
         <result column="content" property="content"/>
         <result column="like_count" property="likeCount"/>
         <result column="reply_to" property="replyTo"/>
@@ -17,30 +16,48 @@
         <result column="username" property="username"/>
         <result column="movie_name" property="movieName"/>
         <result column="current_rating" property="currentRating"/>
+        <result column="reply_to_username" property="replyToUsername"/>
+        <!-- 回复列表 -->
+        <collection property="replies" ofType="com.movie.entity.Comment"
+                    select="findRepliesByParentId" column="comment_id"/>
     </resultMap>
 
+    <!-- 查询一级评论 -->
     <select id="findCommentsByMovieId" resultMap="CommentMap">
-        SELECT c.*, u.username, m.movie_name, col.personal_rating as current_rating
+        SELECT c.*, u.username, m.movie_name, col.personal_rating as current_rating,
+               ru.username as reply_to_username
         FROM movie_comment c
                  JOIN user u ON c.user_id = u.user_id
                  JOIN movie_public m ON c.movie_id = m.movie_id
                  LEFT JOIN movie_collection col ON col.user_id = c.user_id AND col.movie_id = c.movie_id
-        WHERE c.movie_id = #{movieId}
+                 LEFT JOIN user ru ON ru.user_id = c.reply_to
+        WHERE c.movie_id = #{movieId} AND (c.reply_to IS NULL OR c.reply_to = 0)
         ORDER BY c.create_time DESC
     </select>
 
-    <select id="findCommentById" resultMap="CommentMap">
-        SELECT comment_id, movie_id, user_id, content, like_count, reply_to, is_edited, create_time, update_time
-        FROM movie_comment WHERE comment_id = #{commentId}
+    <!-- 查询回复列表 -->
+    <select id="findRepliesByParentId" resultType="com.movie.entity.Comment">
+        SELECT c.*, u.username, col.personal_rating as current_rating
+        FROM movie_comment c
+                 JOIN user u ON c.user_id = u.user_id
+                 LEFT JOIN movie_collection col ON col.user_id = c.user_id AND col.movie_id = c.movie_id
+        WHERE c.reply_to = #{comment_id}
+        ORDER BY c.create_time ASC
     </select>
 
-    <!-- insertComment 移除 rating -->
+    <select id="findCommentById" resultMap="CommentMap">
+        SELECT c.*, u.username, m.movie_name
+        FROM movie_comment c
+                 JOIN user u ON c.user_id = u.user_id
+                 JOIN movie_public m ON c.movie_id = m.movie_id
+        WHERE c.comment_id = #{commentId}
+    </select>
+
     <insert id="insertComment" useGeneratedKeys="true" keyProperty="commentId">
-        INSERT INTO movie_comment (movie_id, user_id, content)
-        VALUES (#{movieId}, #{userId}, #{content})
+        INSERT INTO movie_comment (movie_id, user_id, content, reply_to)
+        VALUES (#{movieId}, #{userId}, #{content}, #{replyTo})
     </insert>
 
-    <!-- updateComment 移除 rating -->
     <update id="updateComment">
         UPDATE movie_comment
         SET content = #{content},
@@ -54,8 +71,7 @@
     </delete>
 
     <select id="findCommentsByUserId" resultMap="CommentMap">
-        SELECT c.comment_id, c.movie_id, c.user_id, c.content, c.like_count, c.reply_to, c.is_edited, c.create_time, c.update_time,
-               u.username, m.movie_name
+        SELECT c.*, u.username, m.movie_name
         FROM movie_comment c
                  JOIN user u ON c.user_id = u.user_id
                  JOIN movie_public m ON c.movie_id = m.movie_id
@@ -63,12 +79,8 @@
         ORDER BY c.create_time DESC
     </select>
 
-    <!-- ❌ 删除以下所有评分统计相关的 SQL -->
-    <!-- getAverageRating, getRatingCount, getAverageRatingExcludeZero, getRatingCountExcludeZero -->
-
     <select id="findCommentsByTmdbId" resultMap="CommentMap">
-        SELECT c.comment_id, c.movie_id, c.user_id, c.content, c.like_count, c.reply_to, c.is_edited, c.create_time, c.update_time,
-               u.username, m.movie_name
+        SELECT c.*, u.username, m.movie_name
         FROM movie_comment c
                  JOIN user u ON c.user_id = u.user_id
                  JOIN movie_public m ON c.movie_id = m.movie_id
@@ -76,19 +88,13 @@
         ORDER BY c.create_time DESC
     </select>
 
-    <!-- ❌ 删除以下 TMDB 评分统计相关的 SQL -->
-
-    <!-- 根据用户ID和电影ID查找公开评价 -->
     <select id="findCommentByUserAndMovie" resultMap="CommentMap">
-        SELECT c.comment_id, c.movie_id, c.user_id, c.content, c.like_count, c.reply_to, c.is_edited, c.create_time, c.update_time,
-               u.username, m.movie_name
+        SELECT c.*, u.username, m.movie_name
         FROM movie_comment c
                  JOIN user u ON c.user_id = u.user_id
                  JOIN movie_public m ON c.movie_id = m.movie_id
         WHERE c.user_id = #{userId} AND c.movie_id = #{movieId}
             LIMIT 1
     </select>
-
-    <!-- ❌ 删除 updateCommentRatingByUserAndMovie -->
 
 </mapper>

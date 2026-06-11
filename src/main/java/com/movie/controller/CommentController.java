@@ -3,11 +3,11 @@ package com.movie.controller;
 import com.movie.dto.ApiResponse;
 import com.movie.dto.CommentByTmdbRequest;
 import com.movie.dto.CommentRequest;
+import com.movie.dto.ReplyRequest;  // ✅ 新增
 import com.movie.entity.Comment;
 import com.movie.entity.MovieCollection;
 import com.movie.mapper.MovieMapper;
 import com.movie.service.CommentService;
-
 import com.movie.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -81,6 +81,27 @@ public class CommentController {
     public ApiResponse<?> getAverageRatingByTmdbId(@PathVariable Integer tmdbId) {
         Map<String, Object> rating = commentService.getMovieRatingByTmdbId(tmdbId);
         return ApiResponse.success(rating);
+    }
+
+    /**
+     * 回复评论
+     */
+    @PostMapping("/reply")
+    public ApiResponse<?> replyComment(@RequestBody ReplyRequest request, HttpServletRequest req) {
+        Integer userId = getUserIdFromToken(req);
+        if (userId == null) {
+            return ApiResponse.error(401, "未登录");
+        }
+        Map<String, Object> result = commentService.replyComment(userId, request);
+        boolean success = (Boolean) result.get("success");
+        if (success) {
+            String message = (String) result.get("message");
+            Object commentId = result.get("commentId");
+            Map<String, Object> data = new HashMap<>();
+            data.put("commentId", commentId);
+            return ApiResponse.success(message, data);
+        }
+        return ApiResponse.error(400, (String) result.get("message"));
     }
 
     @PostMapping("/add")
